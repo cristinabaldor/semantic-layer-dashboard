@@ -453,9 +453,8 @@ header {
   display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;
 }
 .status-eyebrow {
-  font-family: var(--ff-mono); font-size: 0.58rem; font-weight: 600;
-  letter-spacing: 0.12em; text-transform: uppercase;
-  color: rgba(255,255,255,0.3);
+  font-family: var(--ff-head); font-size: 2.4rem; font-weight: 800;
+  line-height: 1; color: var(--white);
 }
 .status-divider { width: 1px; height: 36px; background: rgba(255,255,255,0.12); flex-shrink: 0; }
 .status-block { display: flex; flex-direction: column; gap: 0.2rem; }
@@ -891,7 +890,7 @@ cubes.forEach(c => {
 });
 
 document.getElementById('status-inner').innerHTML = `
-  <span class="status-eyebrow">Metrics</span>
+  <span class="status-eyebrow">Metrics Progress</span>
   <div class="status-divider"></div>
   <div class="status-block">
     <span class="status-num sn-blocked">${metricsBlocked}</span>
