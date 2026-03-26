@@ -445,26 +445,32 @@ header {
 /* ── Status strip (dark indigo) ── */
 .sec-status {
   background: var(--indigo);
-  padding: 0.85rem 2rem;
+  padding: 1.5rem 2rem;
   border-bottom: 3px solid rgba(255,255,255,0.06);
 }
 .status-inner {
   max-width: var(--mw); margin: 0 auto;
-  display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;
 }
 .status-eyebrow {
   font-family: var(--ff-mono); font-size: 0.58rem; font-weight: 600;
   letter-spacing: 0.12em; text-transform: uppercase;
-  color: rgba(255,255,255,0.35); margin-right: 0.4rem;
+  color: rgba(255,255,255,0.3);
 }
-.status-badge {
-  font-family: var(--ff-mono); font-size: 0.62rem; font-weight: 600;
-  border-radius: 4px; padding: 0.22rem 0.65rem; border: 1px solid; white-space: nowrap;
+.status-divider { width: 1px; height: 36px; background: rgba(255,255,255,0.12); flex-shrink: 0; }
+.status-block { display: flex; flex-direction: column; gap: 0.2rem; }
+.status-num {
+  font-family: var(--ff-head); font-size: 2.4rem; font-weight: 800;
+  line-height: 1;
 }
-.sb-blocked { color: #fca5a5; border-color: rgba(252,165,165,0.4); background: rgba(239,68,68,0.18); }
-.sb-ready   { color: #fde68a; border-color: rgba(253,230,138,0.4); background: rgba(245,158,11,0.18); }
-.sb-done    { color: #86efac; border-color: rgba(134,239,172,0.4); background: rgba(34,197,94,0.18);  }
-.sb-bi      { color: #c4b5fd; border-color: rgba(196,181,253,0.4); background: rgba(139,92,246,0.18); }
+.sn-blocked { color: #fca5a5; }
+.sn-ready   { color: #fde68a; }
+.sn-bi      { color: #c4b5fd; }
+.status-lbl {
+  font-family: var(--ff-mono); font-size: 0.58rem; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+}
 
 /* ── Section wrapper ── */
 .sec-wrap { max-width: var(--mw); margin: 0 auto; }
@@ -869,13 +875,38 @@ const readyCubes   = cubes.filter(c => {
   const deps = cubeDeps[c.data.id] || [];
   return c.data.status !== 'complete' && deps.every(d => d.status === 'complete');
 });
-// ── Status strip (badges only) ─────────────────────────────────────────────
+// ── Status strip — counts by individual metric subtask ─────────────────────
+// A metric is blocked if its parent cube has any pending dep;
+// ready for Cube if parent cube deps are all satisfied (cube not yet complete);
+// ready for BI if the subtask itself is done.
+let metricsBlocked = 0, metricsReadyCube = 0;
+cubes.forEach(c => {
+  const d    = c.data;
+  if (d.status === 'complete') return;
+  const deps = cubeDeps[d.id] || [];
+  const isBlocked = deps.some(dep => dep.status !== 'complete');
+  const pending   = (d.sub_total || 0) - (d.sub_done || 0);
+  if (isBlocked) { metricsBlocked   += pending; }
+  else           { metricsReadyCube += pending; }
+});
+
 document.getElementById('status-inner').innerHTML = `
-  <span class="status-eyebrow">Cube metrics</span>
-  ${blockedCubes.length ? `<span class="status-badge sb-blocked">${blockedCubes.length} blocked</span>` : ''}
-  ${readyCubes.length   ? `<span class="status-badge sb-ready">${readyCubes.length} ready for Cube</span>` : ''}
-  <span class="status-badge sb-bi">${readyBICount}/${totalMetrics} ready for BI</span>
-  ${doneCubes.length    ? `<span class="status-badge sb-done">${doneCubes.length} complete</span>` : ''}
+  <span class="status-eyebrow">Metrics</span>
+  <div class="status-divider"></div>
+  <div class="status-block">
+    <span class="status-num sn-blocked">${metricsBlocked}</span>
+    <span class="status-lbl">Blocked</span>
+  </div>
+  <div class="status-divider"></div>
+  <div class="status-block">
+    <span class="status-num sn-ready">${metricsReadyCube}</span>
+    <span class="status-lbl">Ready for Cube</span>
+  </div>
+  <div class="status-divider"></div>
+  <div class="status-block">
+    <span class="status-num sn-bi">${readyBICount}</span>
+    <span class="status-lbl">Ready for BI</span>
+  </div>
 `;
 
 // ── Summary cards (hero right) ─────────────────────────────────────────────
