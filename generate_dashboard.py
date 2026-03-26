@@ -751,7 +751,7 @@ footer {
           Semantic Layer Build Progress
         </div>
         <h1 class="hero-title">
-          From <span class="hero-title-accent">Models</span><br>to Dashboards
+          From Dashboards<br>to <span class="hero-title-accent">Metrics</span>
         </h1>
         <p class="hero-body rev d1">
           Tracking progress across dimension models, fact models, and Tableau Cube Metrics.
