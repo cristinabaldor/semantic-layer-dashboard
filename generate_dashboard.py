@@ -435,13 +435,9 @@ header {
   font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
   letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.6rem;
 }
-.scard-score {
-  font-family: var(--ff-head); font-size: 3rem; font-weight: 800;
-  color: var(--indigo); line-height: 1; margin-bottom: 0.15rem;
-}
-.scard-denom { font-size: 1.65rem; color: var(--g3); }
 .scard-pct {
-  font-family: var(--ff-mono); font-size: 0.62rem; color: var(--g3); margin-bottom: 0.6rem;
+  font-family: var(--ff-head); font-size: 3rem; font-weight: 800;
+  color: var(--indigo); line-height: 1; margin-bottom: 0.6rem;
 }
 .scard-track { height: 4px; background: var(--g2); border-radius: 2px; overflow: hidden; }
 .scard-fill  { height: 100%; border-radius: 2px; }
@@ -537,7 +533,7 @@ header {
 .il-dot-pending { background: transparent; border: 1.5px solid var(--g3); }
 .il-name {
   font-family: var(--ff-mono); font-size: 0.67rem; color: var(--g5);
-  flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  flex: 1; min-width: 0; word-break: break-word;
 }
 .il-row.is-pending .il-name { color: var(--g4); }
 .il-aside { display: flex; align-items: center; gap: 0.35rem; flex-shrink: 0; }
@@ -836,6 +832,27 @@ edges.forEach(e => {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function pct(done, total) { return total ? Math.round(done / total * 100) : 0; }
+function stripCube(name)  { return name.replace(/^cube:\s*/i, ''); }
+
+// ── Sort lists ─────────────────────────────────────────────────────────────
+// dims / facts: done first, then pending (alpha within each group)
+function doneFirst(a, b) {
+  const ak = a.data.status === 'complete' ? 0 : 1;
+  const bk = b.data.status === 'complete' ? 0 : 1;
+  return ak !== bk ? ak - bk : a.data.id.localeCompare(b.data.id);
+}
+dims.sort(doneFirst);
+fcts.sort(doneFirst);
+// cubes: done → ready (deps satisfied) → blocked
+function cubeOrder(c) {
+  if (c.data.status === 'complete') return 0;
+  const deps = cubeDeps[c.data.id] || [];
+  return deps.every(d => d.status === 'complete') ? 1 : 2;
+}
+cubes.sort((a, b) => {
+  const ak = cubeOrder(a), bk = cubeOrder(b);
+  return ak !== bk ? ak - bk : stripCube(a.data.id).localeCompare(stripCube(b.data.id));
+});
 function progBar(done, total, color) {
   return `<div class="prog-track"><div class="prog-fill" style="width:${pct(done,total)}%;background:${color}"></div></div>`;
 }
@@ -845,8 +862,7 @@ function statCard(done, total, typeLabel, typeClass, color) {
   const p = pct(done, total);
   return `<div class="stat-card">
     <div class="scard-type ${typeClass}">${typeLabel}</div>
-    <div class="scard-score">${done}<span class="scard-denom">/${total}</span></div>
-    <div class="scard-pct">${p}% complete</div>
+    <div class="scard-pct">${p}%</div>
     <div class="scard-track"><div class="scard-fill" style="width:${p}%;background:${color}"></div></div>
   </div>`;
 }
@@ -907,7 +923,7 @@ function renderPcol(id, typeLabel, typeClass, color, items, getAside) {
     const aside = getAside ? getAside(d) : '';
     return `<li class="il-row ${ok ? '' : 'is-pending'}">
       <span class="il-dot ${ok ? 'il-dot-done' : 'il-dot-pending'}"></span>
-      <span class="il-name" title="${d.id}">${d.id}</span>
+      <span class="il-name" title="${d.id}">${stripCube(d.id)}</span>
       <span class="il-aside">
         ${aside}
         <span class="il-badge ${ok ? 'ilb-done' : 'ilb-pending'}">${ok ? 'done' : 'pending'}</span>
@@ -926,14 +942,9 @@ function renderPcol(id, typeLabel, typeClass, color, items, getAside) {
 
 renderPcol('pcol-dims', 'Dimensions', 'pt-dim', '#57C0E9', dims, null);
 renderPcol('pcol-fcts', 'Facts',      'pt-fct', '#F9A21A', fcts, null);
-renderPcol('pcol-cubes', 'Cube Metrics', 'pt-cube', '#b45309', cubes, d => {
-  const deps    = cubeDeps[d.id] || [];
-  const nBlocked = deps.filter(dep => dep.status !== 'complete').length;
-  const metricsTxt = d.sub_total > 0
-    ? `<span class="il-meta">${d.sub_done}/${d.sub_total} metrics</span>` : '';
-  const blockTxt = nBlocked > 0 && d.status !== 'complete'
-    ? `<span class="il-badge ilb-blocked">&#9650; ${nBlocked}</span>` : '';
-  return metricsTxt + blockTxt;
+renderPcol('pcol-cubes', 'Tableau Dashboards', 'pt-cube', '#b45309', cubes, d => {
+  return d.sub_total > 0
+    ? `<span class="il-meta">${d.sub_done}/${d.sub_total}</span>` : '';
 });
 
 // ── Cube detail cards ──────────────────────────────────────────────────────
@@ -1005,7 +1016,7 @@ const cubeCardsHtml = cubes.map(c => {
 
   return `<div class="${cardCls}" data-name="${safeId}" data-state="${stateKey}">
     <div class="cc-top">
-      <div class="cc-name">${d.id}</div>
+      <div class="cc-name">${stripCube(d.id)}</div>
       <div class="cc-status">${statusHtml}</div>
     </div>
     ${metricsHtml}
