@@ -129,52 +129,76 @@ header {
   font-size: 1rem; color: var(--g4); line-height: 1.78;
   max-width: 680px; margin-bottom: 2rem;
 }
-.stat-row { display: flex; gap: 2.5rem; flex-wrap: wrap; }
-.stat-item { display: flex; flex-direction: column; gap: 0.25rem; }
-.stat-value {
-  font-family: var(--ff-head); font-size: 2.4rem; font-weight: 800;
-  color: var(--indigo); line-height: 1;
+/* hero two-column layout */
+.hero-layout {
+  display: flex; align-items: flex-start; gap: 2.5rem; margin-bottom: 2.5rem;
 }
-.stat-denom { color: var(--g3); font-size: 1.4rem; }
-.stat-label {
+.hero-left { flex: 1; min-width: 0; }
+.hero-left .hero-body { margin-bottom: 0; }
+.hero-right {
+  display: flex; flex-direction: column; gap: 0.85rem;
+  width: 210px; flex-shrink: 0; padding-top: 0.25rem;
+}
+@media (max-width: 900px) {
+  .hero-layout { flex-direction: column; }
+  .hero-right { flex-direction: row; width: 100%; }
+}
+/* summary cards (right of title) */
+.summary-card {
+  background: var(--g1); border: 1px solid var(--g2);
+  border-radius: var(--r-lg); padding: 1.1rem 1.25rem;
+}
+.sc-pct {
+  font-family: var(--ff-head); font-size: 2.8rem; font-weight: 800;
+  color: var(--indigo); line-height: 1; margin-bottom: 0.15rem;
+}
+.sc-label {
+  font-family: var(--ff-mono); font-size: 0.58rem; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--g3);
+  margin-bottom: 0.3rem;
+}
+.sc-sub { font-family: var(--ff-mono); font-size: 0.6rem; color: var(--g4); }
+.sc-track {
+  height: 3px; background: var(--g2); border-radius: 2px;
+  overflow: hidden; margin-top: 0.6rem;
+}
+.sc-fill { height: 100%; border-radius: 2px; }
+/* three stat cards (hero bottom row) */
+.stat-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+@media (max-width: 640px) { .stat-cards { grid-template-columns: 1fr; } }
+.stat-card {
+  background: var(--g1); border: 1px solid var(--g2);
+  border-radius: var(--r-lg); padding: 1.35rem 1.5rem;
+}
+.scard-type {
   font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
-  letter-spacing: 0.12em; text-transform: uppercase; color: var(--g3);
+  letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.6rem;
 }
-.stat-bar {
-  height: 3px; width: 72px; background: var(--g2);
-  border-radius: 2px; overflow: hidden; margin-top: 0.15rem;
+.scard-score {
+  font-family: var(--ff-head); font-size: 3rem; font-weight: 800;
+  color: var(--indigo); line-height: 1; margin-bottom: 0.15rem;
 }
-.stat-bar-fill { height: 100%; border-radius: 2px; }
+.scard-denom { font-size: 1.65rem; color: var(--g3); }
+.scard-pct {
+  font-family: var(--ff-mono); font-size: 0.62rem; color: var(--g3); margin-bottom: 0.6rem;
+}
+.scard-track { height: 4px; background: var(--g2); border-radius: 2px; overflow: hidden; }
+.scard-fill  { height: 100%; border-radius: 2px; }
 
 /* ── Status strip (dark indigo) ── */
 .sec-status {
   background: var(--indigo);
-  padding: 1.1rem 2rem;
+  padding: 0.85rem 2rem;
   border-bottom: 3px solid rgba(255,255,255,0.06);
 }
 .status-inner {
   max-width: var(--mw); margin: 0 auto;
-  display: flex; align-items: center; gap: 1.75rem; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
 }
 .status-eyebrow {
   font-family: var(--ff-mono); font-size: 0.58rem; font-weight: 600;
   letter-spacing: 0.12em; text-transform: uppercase;
-  color: rgba(255,255,255,0.35);
-}
-.status-block {
-  display: flex; align-items: baseline; gap: 0.45rem;
-}
-.status-num {
-  font-family: var(--ff-head); font-size: 1.8rem; font-weight: 800;
-  color: var(--white); line-height: 1;
-}
-.status-desc {
-  font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 500;
-  color: rgba(255,255,255,0.5); line-height: 1.45;
-}
-.status-divider {
-  width: 1px; height: 28px;
-  background: rgba(255,255,255,0.12); flex-shrink: 0;
+  color: rgba(255,255,255,0.35); margin-right: 0.4rem;
 }
 .status-badge {
   font-family: var(--ff-mono); font-size: 0.62rem; font-weight: 600;
@@ -184,7 +208,6 @@ header {
 .sb-ready   { color: #fde68a; border-color: rgba(253,230,138,0.4); background: rgba(245,158,11,0.18); }
 .sb-done    { color: #86efac; border-color: rgba(134,239,172,0.4); background: rgba(34,197,94,0.18);  }
 .sb-bi      { color: #c4b5fd; border-color: rgba(196,181,253,0.4); background: rgba(139,92,246,0.18); }
-.status-badges { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-left: auto; }
 
 /* ── Section wrapper ── */
 .sec-wrap { max-width: var(--mw); margin: 0 auto; }
@@ -459,18 +482,23 @@ footer {
 <!-- ── HERO ── -->
 <section class="hero">
   <div class="hero-inner">
-    <div class="hero-eyebrow">
-      <span class="pulse-dot"></span>
-      Semantic Layer Build Progress
+    <div class="hero-layout">
+      <div class="hero-left">
+        <div class="hero-eyebrow">
+          <span class="pulse-dot"></span>
+          Semantic Layer Build Progress
+        </div>
+        <h1 class="hero-title">
+          From <span class="hero-title-accent">Models</span><br>to Dashboards
+        </h1>
+        <p class="hero-body rev d1">
+          Tracking progress across dimension models, fact models, and Tableau Cube Metrics.
+          A cube metric can only ship once every required model is complete.
+        </p>
+      </div>
+      <div class="hero-right rev d2" id="summary-cards"><!-- filled by JS --></div>
     </div>
-    <h1 class="hero-title">
-      From <span class="hero-title-accent">Models</span><br>to Dashboards
-    </h1>
-    <p class="hero-body rev d1">
-      Tracking progress across dimension models, fact models, and Tableau Cube Metrics.
-      A cube metric can only ship once every required model is complete.
-    </p>
-    <div class="stat-row rev d2" id="stat-row"><!-- filled by JS --></div>
+    <div class="stat-cards rev d3" id="stat-row"><!-- filled by JS --></div>
   </div>
 </section>
 
@@ -551,26 +579,20 @@ function progBar(done, total, color) {
   return `<div class="prog-track"><div class="prog-fill" style="width:${pct(done,total)}%;background:${color}"></div></div>`;
 }
 
-// ── Header chips ───────────────────────────────────────────────────────────
-document.getElementById('hdr-stats').innerHTML = [
-  `<span class="chip c-blue">${STATS.dims_done}/${STATS.dims_total} dims</span>`,
-  `<span class="chip c-orange">${STATS.fcts_done}/${STATS.fcts_total} facts</span>`,
-  `<span class="chip c-gold">${STATS.cubes_done}/${STATS.cubes_total} cube metrics</span>`,
-].join('');
-
-// ── Hero stats ─────────────────────────────────────────────────────────────
-function heroStat(done, total, label, color) {
+// ── Stat cards (hero bottom row) ───────────────────────────────────────────
+function statCard(done, total, typeLabel, typeClass, color) {
   const p = pct(done, total);
-  return `<div class="stat-item">
-    <span class="stat-value">${done}<span class="stat-denom">/${total}</span></span>
-    <span class="stat-label">${label}</span>
-    <div class="stat-bar"><div class="stat-bar-fill" style="width:${p}%;background:${color}"></div></div>
+  return `<div class="stat-card">
+    <div class="scard-type ${typeClass}">${typeLabel}</div>
+    <div class="scard-score">${done}<span class="scard-denom">/${total}</span></div>
+    <div class="scard-pct">${p}% complete</div>
+    <div class="scard-track"><div class="scard-fill" style="width:${p}%;background:${color}"></div></div>
   </div>`;
 }
 document.getElementById('stat-row').innerHTML = [
-  heroStat(STATS.dims_done,  STATS.dims_total,  'Dimensions',  '#57C0E9'),
-  heroStat(STATS.fcts_done,  STATS.fcts_total,  'Facts',       '#F9A21A'),
-  heroStat(STATS.cubes_done, STATS.cubes_total, 'Cube Metrics','#b45309'),
+  statCard(STATS.dims_done,  STATS.dims_total,  'Dimensions',   'pt-dim',  '#57C0E9'),
+  statCard(STATS.fcts_done,  STATS.fcts_total,  'Facts',        'pt-fct',  '#F9A21A'),
+  statCard(STATS.cubes_done, STATS.cubes_total, 'Cube Metrics', 'pt-cube', '#b45309'),
 ].join('');
 
 // ── Status strip ───────────────────────────────────────────────────────────
@@ -585,30 +607,32 @@ const readyCubes   = cubes.filter(c => {
   const deps = cubeDeps[c.data.id] || [];
   return c.data.status !== 'complete' && deps.every(d => d.status === 'complete');
 });
-const pendingDimCount = dims.filter(n => n.data.status !== 'complete').length;
-const pendingFctCount = fcts.filter(n => n.data.status !== 'complete').length;
-const totalPending    = pendingDimCount + pendingFctCount;
-
+// ── Status strip (badges only) ─────────────────────────────────────────────
 document.getElementById('status-inner').innerHTML = `
-  <span class="status-eyebrow">At a glance</span>
-  <div class="status-block">
-    <span class="status-num">${totalPending}</span>
-    <span class="status-desc">models<br>outstanding</span>
+  <span class="status-eyebrow">Cube metrics</span>
+  ${blockedCubes.length ? `<span class="status-badge sb-blocked">${blockedCubes.length} blocked</span>` : ''}
+  ${readyCubes.length   ? `<span class="status-badge sb-ready">${readyCubes.length} ready for Cube</span>` : ''}
+  <span class="status-badge sb-bi">${readyBICount}/${totalMetrics} ready for BI</span>
+  ${doneCubes.length    ? `<span class="status-badge sb-done">${doneCubes.length} complete</span>` : ''}
+`;
+
+// ── Summary cards (hero right) ─────────────────────────────────────────────
+const modelsDone  = STATS.dims_done + STATS.fcts_done;
+const modelsTotal = STATS.dims_total + STATS.fcts_total;
+const modelsPct   = pct(modelsDone, modelsTotal);
+const metricsPct  = pct(readyBICount, totalMetrics);
+document.getElementById('summary-cards').innerHTML = `
+  <div class="summary-card">
+    <div class="sc-pct">${modelsPct}%</div>
+    <div class="sc-label">Models</div>
+    <div class="sc-sub">${modelsDone}/${modelsTotal} tasks complete</div>
+    <div class="sc-track"><div class="sc-fill" style="width:${modelsPct}%;background:#57C0E9"></div></div>
   </div>
-  <div class="status-divider"></div>
-  <div class="status-block">
-    <span class="status-num">${pendingDimCount}</span>
-    <span class="status-desc">dim${pendingDimCount !== 1 ? 's' : ''}<br>pending</span>
-  </div>
-  <div class="status-block">
-    <span class="status-num">${pendingFctCount}</span>
-    <span class="status-desc">fact${pendingFctCount !== 1 ? 's' : ''}<br>pending</span>
-  </div>
-  <div class="status-badges">
-    ${blockedCubes.length ? `<span class="status-badge sb-blocked">${blockedCubes.length} cube${blockedCubes.length !== 1 ? 's' : ''} blocked</span>` : ''}
-    ${readyCubes.length   ? `<span class="status-badge sb-ready">${readyCubes.length} ready for Cube</span>` : ''}
-    <span class="status-badge sb-bi">${readyBICount}/${totalMetrics} ready for BI</span>
-    ${doneCubes.length    ? `<span class="status-badge sb-done">${doneCubes.length} complete</span>` : ''}
+  <div class="summary-card">
+    <div class="sc-pct">${metricsPct}%</div>
+    <div class="sc-label">Metrics</div>
+    <div class="sc-sub">${readyBICount}/${totalMetrics} ready for BI</div>
+    <div class="sc-track"><div class="sc-fill" style="width:${metricsPct}%;background:#8b5cf6"></div></div>
   </div>
 `;
 
