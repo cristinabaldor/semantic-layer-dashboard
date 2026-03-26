@@ -510,6 +510,11 @@ header {
 .pt-dim  { color: #0c6b96; }
 .pt-fct  { color: #92400e; }
 .pt-cube { color: var(--indigo); }
+.pcol-subtitle {
+  display: block; font-family: var(--ff-mono); font-size: 0.55rem;
+  font-weight: 500; letter-spacing: 0.04em; text-transform: none;
+  color: var(--g3); margin-top: 0.15rem;
+}
 .pcol-score {
   font-family: var(--ff-head); font-size: 1.9rem; font-weight: 800;
   color: var(--indigo); line-height: 1; margin-bottom: 0.55rem;
@@ -785,7 +790,7 @@ footer {
     <div class="cube-toolbar rev">
       <div class="sec-label" style="margin-bottom:0">Cube Metric Details &amp; Dependencies</div>
       <div class="filter-bar">
-        <input type="text" id="cube-search" class="search-input" placeholder="Search cubes&#8230;"/>
+        <input type="text" id="cube-search" class="search-input" placeholder="Search dashboards&#8230;"/>
         <div class="fchip-group" id="filter-chips">
           <button class="fchip fc-active" data-status="all">All</button>
           <button class="fchip fc-blocked" data-status="blocked">&#9650; Blocked</button>
@@ -928,7 +933,7 @@ document.getElementById('summary-cards').innerHTML = `
 `;
 
 // ── Progress columns ───────────────────────────────────────────────────────
-function renderPcol(id, typeLabel, typeClass, color, items, getAside) {
+function renderPcol(id, typeLabel, typeClass, color, items, getAside, subtitle) {
   const done  = items.filter(n => n.data.status === 'complete').length;
   const total = items.length;
   const rows  = items.map(n => {
@@ -946,7 +951,7 @@ function renderPcol(id, typeLabel, typeClass, color, items, getAside) {
   }).join('');
   document.getElementById(id).innerHTML = `
     <div class="pcol-head">
-      <div class="pcol-type ${typeClass}">${typeLabel}</div>
+      <div class="pcol-type ${typeClass}">${typeLabel}${subtitle ? `<span class="pcol-subtitle">${subtitle}</span>` : ''}</div>
       <div class="pcol-score">${done}<span class="pcol-score-denom">/${total}</span></div>
       ${progBar(done, total, color)}
     </div>
@@ -959,7 +964,7 @@ renderPcol('pcol-fcts', 'Facts',      'pt-fct', '#F9A21A', fcts, null);
 renderPcol('pcol-cubes', 'Tableau Dashboards', 'pt-cube', '#b45309', cubes, d => {
   return d.sub_total > 0
     ? `<span class="il-meta">${d.sub_done}/${d.sub_total}</span>` : '';
-});
+}, 'click to filter below');
 
 // ── Cube detail cards ──────────────────────────────────────────────────────
 const cubeCardsHtml = cubes.map(c => {
