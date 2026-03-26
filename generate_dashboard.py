@@ -754,8 +754,7 @@ footer {
           From Dashboards<br>to <span class="hero-title-accent">Metrics</span>
         </h1>
         <p class="hero-body rev d1">
-          Tracking progress across dimension models, fact models, and Tableau Cube Metrics.
-          A cube metric can only ship once every required model is complete.
+          Tracking migration of Tableau reporting views to dimension and fact models and semantic layer metrics. A metric can only ship once every required model is complete.
         </p>
       </div>
       <div class="hero-right rev d2" id="summary-cards"><!-- filled by JS --></div>
