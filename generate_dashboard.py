@@ -755,7 +755,6 @@ footer {
       </div>
       <div class="hero-right rev d2" id="summary-cards"><!-- filled by JS --></div>
     </div>
-    <div class="stat-cards rev d3" id="stat-row"><!-- filled by JS --></div>
   </div>
 </section>
 
@@ -857,20 +856,6 @@ function progBar(done, total, color) {
   return `<div class="prog-track"><div class="prog-fill" style="width:${pct(done,total)}%;background:${color}"></div></div>`;
 }
 
-// ── Stat cards (hero bottom row) ───────────────────────────────────────────
-function statCard(done, total, typeLabel, typeClass, color) {
-  const p = pct(done, total);
-  return `<div class="stat-card">
-    <div class="scard-type ${typeClass}">${typeLabel}</div>
-    <div class="scard-pct">${p}%</div>
-    <div class="scard-track"><div class="scard-fill" style="width:${p}%;background:${color}"></div></div>
-  </div>`;
-}
-document.getElementById('stat-row').innerHTML = [
-  statCard(STATS.dims_done,  STATS.dims_total,  'Dimensions',   'pt-dim',  '#57C0E9'),
-  statCard(STATS.fcts_done,  STATS.fcts_total,  'Facts',        'pt-fct',  '#F9A21A'),
-  statCard(STATS.cubes_done, STATS.cubes_total, 'Cube Metrics', 'pt-cube', '#b45309'),
-].join('');
 
 // ── Status strip ───────────────────────────────────────────────────────────
 const doneCubes    = cubes.filter(c => c.data.status === 'complete');
