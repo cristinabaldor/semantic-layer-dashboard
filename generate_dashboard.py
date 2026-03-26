@@ -268,9 +268,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.29.2/cytoscape.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -279,7 +276,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   --white:   #FFFFFF;
   --orange:  #F9A21A;
   --blue:    #57C0E9;
-  --green:   #4ADE80;
+  --green:   #22c55e;
   --g1: #F4F5F7;
   --g2: #E2E4E9;
   --g3: #9BA3AF;
@@ -290,7 +287,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   --ff-mono: 'JetBrains Mono', monospace;
   --r:    8px;
   --r-lg: 14px;
-  --mw:   1200px;
+  --mw:   1280px;
 }
 
 html { font-size: 16px; scroll-behavior: smooth; }
@@ -305,7 +302,7 @@ body {
 /* ── Header ── */
 header {
   position: sticky; top: 0; z-index: 100;
-  background: rgba(255,255,255,0.93);
+  background: rgba(255,255,255,0.95);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--g2);
 }
@@ -334,15 +331,16 @@ header {
   letter-spacing: 0.04em; border-radius: 4px;
   padding: 0.2rem 0.6rem; border: 1px solid; white-space: nowrap;
 }
-.c-blue   { color: var(--blue);   border-color: rgba(87,192,233,0.4);  background: rgba(87,192,233,0.09);  }
-.c-orange { color: var(--orange); border-color: rgba(249,162,26,0.4);  background: rgba(249,162,26,0.09);  }
-.c-green  { color: #22c55e;       border-color: rgba(34,197,94,0.35);  background: rgba(34,197,94,0.07);   }
-.c-muted  { color: var(--g4);     border-color: var(--g2);             background: var(--g1);              }
-.c-gold   { color: #b45309;       border-color: rgba(180,83,9,0.3);    background: rgba(251,191,36,0.1);   }
+.c-blue   { color: #0c6b96;   border-color: rgba(87,192,233,0.5);   background: rgba(87,192,233,0.12);  }
+.c-orange { color: #92400e;   border-color: rgba(249,162,26,0.5);   background: rgba(249,162,26,0.12);  }
+.c-green  { color: #166534;   border-color: rgba(34,197,94,0.45);   background: rgba(34,197,94,0.10);   }
+.c-muted  { color: var(--g4); border-color: var(--g2);              background: var(--g1);              }
+.c-gold   { color: #92400e;   border-color: rgba(180,83,9,0.35);    background: rgba(251,191,36,0.12);  }
+.c-red    { color: #991b1b;   border-color: rgba(239,68,68,0.45);   background: rgba(239,68,68,0.09);   }
 
 .pulse-dot {
   display: inline-block; width: 6px; height: 6px; border-radius: 50%;
-  background: var(--blue); margin-right: 4px; vertical-align: middle;
+  background: #0c6b96; margin-right: 4px; vertical-align: middle;
   animation: pulse 2.2s ease-in-out infinite;
 }
 @keyframes pulse {
@@ -350,7 +348,7 @@ header {
   50%       { opacity: 0.4; transform: scale(0.75); }
 }
 
-/* ── Hero strip ── */
+/* ── Hero ── */
 .hero {
   padding: 3.5rem 2rem 3rem;
   border-bottom: 1px solid var(--g2);
@@ -377,8 +375,8 @@ header {
 .hero-eyebrow {
   display: inline-flex; align-items: center; gap: 0.45rem;
   font-family: var(--ff-mono); font-size: 0.62rem; font-weight: 600;
-  letter-spacing: 0.12em; text-transform: uppercase; color: var(--blue);
-  background: rgba(87,192,233,0.08); border: 1px solid rgba(87,192,233,0.22);
+  letter-spacing: 0.12em; text-transform: uppercase; color: #0c6b96;
+  background: rgba(87,192,233,0.08); border: 1px solid rgba(87,192,233,0.25);
   border-radius: 20px; padding: 0.28rem 0.9rem; margin-bottom: 1.4rem;
 }
 .hero-title {
@@ -392,126 +390,295 @@ header {
   font-size: 1rem; color: var(--g4); line-height: 1.78;
   max-width: 680px; margin-bottom: 2rem;
 }
-.stat-row { display: flex; gap: 2rem; flex-wrap: wrap; }
-.stat-item { display: flex; flex-direction: column; gap: 0.2rem; }
+.stat-row { display: flex; gap: 2.5rem; flex-wrap: wrap; }
+.stat-item { display: flex; flex-direction: column; gap: 0.25rem; }
 .stat-value {
-  font-family: var(--ff-head); font-size: 2rem; font-weight: 800;
+  font-family: var(--ff-head); font-size: 2.4rem; font-weight: 800;
   color: var(--indigo); line-height: 1;
 }
-.stat-label { font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
-  letter-spacing: 0.12em; text-transform: uppercase; color: var(--g3); }
-
-/* ── Graph section (dark indigo) ── */
-.sec-graph {
-  background: var(--indigo);
-  padding: 0;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  position: relative;
+.stat-denom { color: var(--g3); font-size: 1.4rem; }
+.stat-label {
+  font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--g3);
 }
-.graph-toolbar {
+.stat-bar {
+  height: 3px; width: 72px; background: var(--g2);
+  border-radius: 2px; overflow: hidden; margin-top: 0.15rem;
+}
+.stat-bar-fill { height: 100%; border-radius: 2px; }
+
+/* ── Status strip (dark indigo) ── */
+.sec-status {
+  background: var(--indigo);
+  padding: 1.1rem 2rem;
+  border-bottom: 3px solid rgba(255,255,255,0.06);
+}
+.status-inner {
   max-width: var(--mw); margin: 0 auto;
-  padding: 1rem 2rem 0.75rem;
-  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-  flex-wrap: wrap;
+  display: flex; align-items: center; gap: 1.75rem; flex-wrap: wrap;
 }
-.graph-title {
-  font-family: var(--ff-head); font-size: 1.1rem; font-weight: 700;
-  letter-spacing: 0.05em; text-transform: uppercase;
-  color: rgba(255,255,255,0.5);
-}
-.toolbar-btns { display: flex; gap: 0.5rem; align-items: center; }
-.btn-icon {
-  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.65); border-radius: var(--r);
-  padding: 0.35rem 0.85rem; font-family: var(--ff-mono); font-size: 0.65rem;
-  font-weight: 600; letter-spacing: 0.06em; cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-.btn-icon:hover { background: rgba(255,255,255,0.13); color: var(--white); }
-
-#cy {
-  width: 100%;
-  height: calc(100vh - 58px);
-  min-height: 560px;
-  background: var(--indigo);
-  display: block;
-}
-
-/* ── Info panel ── */
-#info-panel {
-  position: fixed; right: -360px; top: 70px;
-  width: 330px; max-height: calc(100vh - 90px);
-  background: var(--white); border: 1px solid var(--g2);
-  border-radius: var(--r-lg); padding: 1.4rem;
-  box-shadow: -6px 0 32px rgba(0,0,0,0.18);
-  transition: right 0.25s cubic-bezier(0.4,0,0.2,1);
-  z-index: 200; overflow-y: auto;
-}
-#info-panel.open { right: 1.5rem; }
-.panel-close {
-  position: absolute; top: 0.8rem; right: 0.8rem;
-  background: var(--g1); border: 1px solid var(--g2); border-radius: 50%;
-  width: 26px; height: 26px; font-size: 0.75rem;
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  color: var(--g4); transition: background 0.15s;
-}
-.panel-close:hover { background: var(--g2); }
-.panel-type-row { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.65rem; }
-.panel-name {
-  font-family: var(--ff-head); font-size: 1.3rem; font-weight: 700;
-  color: var(--indigo); line-height: 1.15; margin-bottom: 0.75rem;
-  word-break: break-word;
-}
-.panel-section-label {
+.status-eyebrow {
   font-family: var(--ff-mono); font-size: 0.58rem; font-weight: 600;
-  letter-spacing: 0.12em; text-transform: uppercase; color: var(--orange);
-  margin: 0.9rem 0 0.35rem;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
 }
-.panel-desc { font-size: 0.85rem; color: var(--g4); line-height: 1.7; }
-.panel-rpt-list {
-  list-style: none; display: flex; flex-direction: column; gap: 0.25rem;
-  margin-top: 0.35rem;
+.status-block {
+  display: flex; align-items: baseline; gap: 0.45rem;
 }
-.panel-rpt-list li {
-  font-family: var(--ff-mono); font-size: 0.6rem; color: var(--g4);
-  background: var(--g1); border: 1px solid var(--g2);
-  border-radius: 4px; padding: 0.2rem 0.5rem;
+.status-num {
+  font-family: var(--ff-head); font-size: 1.8rem; font-weight: 800;
+  color: var(--white); line-height: 1;
 }
-.sub-list li { display: flex; align-items: baseline; gap: 0.35rem; }
-.sub-list li.done { color: var(--g5); }
-.sub-list li.done .sub-icon { color: #22c55e; }
-.sub-icon { font-size: 0.65rem; flex-shrink: 0; }
-.panel-lsid {
-  font-family: var(--ff-mono); font-size: 0.6rem; color: var(--g3);
-  word-break: break-all; margin-top: 0.25rem;
+.status-desc {
+  font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 500;
+  color: rgba(255,255,255,0.5); line-height: 1.45;
 }
-
-/* ── Legend ── */
-.sec-legend {
-  background: var(--indigo);
-  padding: 1rem 2rem 1.4rem;
-  border-top: 1px solid rgba(255,255,255,0.07);
+.status-divider {
+  width: 1px; height: 28px;
+  background: rgba(255,255,255,0.12); flex-shrink: 0;
 }
-.legend-inner {
-  max-width: var(--mw); margin: 0 auto;
-  display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
-}
-.legend-label {
-  font-family: var(--ff-mono); font-size: 0.58rem; font-weight: 600;
-  letter-spacing: 0.1em; text-transform: uppercase;
-  color: rgba(255,255,255,0.28); margin-right: 0.5rem;
-}
-.chip-dark {
+.status-badge {
   font-family: var(--ff-mono); font-size: 0.62rem; font-weight: 600;
-  letter-spacing: 0.04em; border-radius: 4px;
-  padding: 0.2rem 0.6rem; border: 1px solid; white-space: nowrap;
+  border-radius: 4px; padding: 0.22rem 0.65rem; border: 1px solid; white-space: nowrap;
 }
-.cd-blue   { color: var(--blue);   border-color: rgba(87,192,233,0.4);  background: rgba(87,192,233,0.1);  }
-.cd-orange { color: var(--orange); border-color: rgba(249,162,26,0.4);  background: rgba(249,162,26,0.1);  }
-.cd-white  { color: rgba(255,255,255,0.85); border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.06); }
-.cd-muted  { color: rgba(255,255,255,0.35); border-color: rgba(255,255,255,0.12); background: transparent; }
-.cd-green  { color: #4ade80; border-color: rgba(74,222,128,0.35); background: rgba(74,222,128,0.08); }
-.legend-sep { color: rgba(255,255,255,0.15); font-size: 0.8rem; margin: 0 0.2rem; }
+.sb-blocked { color: #fca5a5; border-color: rgba(252,165,165,0.4); background: rgba(239,68,68,0.18); }
+.sb-ready   { color: #fde68a; border-color: rgba(253,230,138,0.4); background: rgba(245,158,11,0.18); }
+.sb-done    { color: #86efac; border-color: rgba(134,239,172,0.4); background: rgba(34,197,94,0.18);  }
+.sb-bi      { color: #c4b5fd; border-color: rgba(196,181,253,0.4); background: rgba(139,92,246,0.18); }
+.status-badges { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-left: auto; }
+
+/* ── Section wrapper ── */
+.sec-wrap { max-width: var(--mw); margin: 0 auto; }
+.sec-label {
+  font-family: var(--ff-mono); font-size: 0.62rem; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--g3);
+  margin-bottom: 1.25rem;
+}
+
+/* ── Progress columns ── */
+.sec-progress {
+  background: var(--g1);
+  padding: 2.75rem 2rem;
+  border-bottom: 1px solid var(--g2);
+}
+.progress-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+@media (max-width: 860px) { .progress-grid { grid-template-columns: 1fr; } }
+
+.pcol {
+  background: var(--white);
+  border: 1px solid var(--g2);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.pcol-head {
+  padding: 1rem 1.2rem 0.9rem;
+  border-bottom: 1px solid var(--g2);
+}
+.pcol-type {
+  font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.45rem;
+}
+.pt-dim  { color: #0c6b96; }
+.pt-fct  { color: #92400e; }
+.pt-cube { color: var(--indigo); }
+.pcol-score {
+  font-family: var(--ff-head); font-size: 1.9rem; font-weight: 800;
+  color: var(--indigo); line-height: 1; margin-bottom: 0.55rem;
+}
+.pcol-score-denom { font-size: 1.1rem; color: var(--g3); }
+.prog-track {
+  height: 5px; background: var(--g2); border-radius: 3px; overflow: hidden;
+}
+.prog-fill { height: 100%; border-radius: 3px; }
+
+.item-list { list-style: none; max-height: 400px; overflow-y: auto; padding: 0.4rem 0; }
+.item-list::-webkit-scrollbar { width: 4px; }
+.item-list::-webkit-scrollbar-track { background: transparent; }
+.item-list::-webkit-scrollbar-thumb { background: var(--g2); border-radius: 2px; }
+
+.il-row {
+  display: flex; align-items: center; gap: 0.55rem;
+  padding: 0.36rem 1.2rem;
+  transition: background 0.1s;
+}
+.il-row:hover { background: var(--g1); }
+.il-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+}
+.il-dot-done    { background: var(--green); }
+.il-dot-pending { background: transparent; border: 1.5px solid var(--g3); }
+.il-name {
+  font-family: var(--ff-mono); font-size: 0.67rem; color: var(--g5);
+  flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.il-row.is-pending .il-name { color: var(--g4); }
+.il-aside { display: flex; align-items: center; gap: 0.35rem; flex-shrink: 0; }
+.il-badge {
+  font-family: var(--ff-mono); font-size: 0.55rem; font-weight: 600;
+  border-radius: 3px; padding: 0.1rem 0.4rem; border: 1px solid;
+}
+.ilb-done    { color: #166534; border-color: rgba(34,197,94,0.4);  background: rgba(34,197,94,0.08);  }
+.ilb-pending { color: var(--g4); border-color: var(--g2);          background: transparent;           }
+.ilb-blocked { color: #991b1b; border-color: rgba(239,68,68,0.4);  background: rgba(239,68,68,0.07);  }
+.il-meta {
+  font-family: var(--ff-mono); font-size: 0.55rem; color: var(--g3);
+}
+
+/* ── Cube cards ── */
+.sec-cubes {
+  background: var(--white);
+  padding: 2.75rem 2rem;
+  border-bottom: 1px solid var(--g2);
+}
+.cube-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1rem;
+}
+.cube-card {
+  border: 1px solid var(--g2);
+  border-radius: var(--r-lg);
+  padding: 1.2rem 1.35rem;
+  background: var(--white);
+  transition: box-shadow 0.15s, border-color 0.15s;
+  border-left-width: 3px;
+}
+.cube-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.07); }
+.cc-done    { border-left-color: var(--green); }
+.cc-blocked { border-left-color: #ef4444; }
+.cc-ready   { border-left-color: var(--orange); }
+
+.cc-top {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 0.75rem; margin-bottom: 0.8rem;
+}
+.cc-name {
+  font-family: var(--ff-head); font-size: 1.05rem; font-weight: 700;
+  color: var(--indigo); line-height: 1.2; word-break: break-word;
+}
+.cc-status { flex-shrink: 0; margin-top: 0.1rem; }
+
+/* metrics mini-bar */
+.cc-metrics {
+  margin-bottom: 0.85rem;
+}
+.cc-metrics-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 0.3rem;
+}
+.cc-metrics-label {
+  font-family: var(--ff-mono); font-size: 0.58rem; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--g3);
+}
+.cc-metrics-count {
+  font-family: var(--ff-mono); font-size: 0.58rem; color: var(--g4);
+}
+.cc-track { height: 4px; background: var(--g2); border-radius: 2px; overflow: hidden; }
+.cc-fill  { height: 100%; border-radius: 2px; }
+
+/* subtask list inside card */
+.cc-sub-list {
+  list-style: none; margin-top: 0.5rem;
+  display: flex; flex-direction: column; gap: 0.18rem;
+  max-height: 140px; overflow-y: auto;
+  padding: 0 0 0.25rem;
+}
+.cc-sub-list::-webkit-scrollbar { width: 3px; }
+.cc-sub-list::-webkit-scrollbar-thumb { background: var(--g2); }
+.cc-sub-row {
+  display: flex; align-items: center; gap: 0.4rem;
+  font-family: var(--ff-mono); font-size: 0.62rem;
+}
+.cc-sub-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.cc-sub-done    .cc-sub-dot { background: var(--green); }
+.cc-sub-pending .cc-sub-dot { background: transparent; border: 1.5px solid var(--g3); }
+.cc-sub-done    .cc-sub-name { color: var(--g3); text-decoration: line-through; }
+.cc-sub-pending .cc-sub-name { color: var(--g5); }
+
+/* deps section */
+.cc-deps {
+  border-top: 1px solid var(--g2);
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+}
+.cc-deps-label {
+  font-family: var(--ff-mono); font-size: 0.58rem; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--g3);
+  margin-bottom: 0.4rem;
+}
+.cc-dep-list {
+  list-style: none; display: flex; flex-direction: column; gap: 0.2rem;
+}
+.cc-dep {
+  display: flex; align-items: center; gap: 0.4rem;
+  font-family: var(--ff-mono); font-size: 0.62rem;
+}
+.cc-dep-indicator {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+}
+.dep-done    .cc-dep-indicator { background: var(--green); }
+.dep-pending .cc-dep-indicator { background: transparent; border: 1.5px solid #ef4444; }
+.dep-done    .cc-dep-name { color: var(--g3); text-decoration: line-through; }
+.dep-pending .cc-dep-name { color: var(--g5); font-weight: 600; }
+.cc-dep-type {
+  font-size: 0.55rem; color: var(--g3); margin-left: auto; flex-shrink: 0;
+}
+.cc-no-deps {
+  font-family: var(--ff-mono); font-size: 0.62rem; color: var(--g3); font-style: italic;
+}
+
+/* ── Filter bar ── */
+.cube-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem;
+}
+.filter-bar {
+  display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+}
+.search-input {
+  font-family: var(--ff-mono); font-size: 0.7rem;
+  border: 1px solid var(--g2); border-radius: var(--r);
+  padding: 0.35rem 0.8rem; outline: none;
+  background: var(--g1); color: var(--g5); width: 220px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.search-input:focus { border-color: var(--blue); background: var(--white); }
+.search-input::placeholder { color: var(--g3); }
+.fchip-group { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+.fchip {
+  font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
+  letter-spacing: 0.04em; border-radius: 4px;
+  padding: 0.25rem 0.65rem; border: 1px solid var(--g2);
+  background: transparent; color: var(--g4);
+  cursor: pointer; transition: all 0.12s; white-space: nowrap;
+}
+.fchip:hover { border-color: var(--g3); color: var(--g5); background: var(--g1); }
+.fchip.fc-active           { background: var(--indigo); color: var(--white); border-color: var(--indigo); }
+.fchip.fc-blocked.fc-active { background: #991b1b; border-color: #991b1b; color: var(--white); }
+.fchip.fc-ready.fc-active   { background: #92400e; border-color: #92400e; color: var(--white); }
+.fchip.fc-done.fc-active    { background: #166534; border-color: #166534; color: var(--white); }
+.filter-count {
+  font-family: var(--ff-mono); font-size: 0.6rem; color: var(--g3); white-space: nowrap;
+}
+.filter-clear-btn {
+  font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
+  border-radius: 4px; padding: 0.25rem 0.65rem;
+  border: 1px solid var(--g2); background: transparent; color: var(--g4);
+  cursor: pointer; transition: all 0.12s;
+}
+.filter-clear-btn:hover { background: var(--g2); color: var(--g5); }
+/* clickable progress list items */
+.il-row-click { cursor: pointer; }
+.il-row-click:hover { background: rgba(87,192,233,0.07); }
+.il-row-click.il-selected {
+  background: rgba(0,30,98,0.07);
+  box-shadow: inset 2px 0 0 var(--indigo);
+}
 
 /* ── Footer ── */
 footer {
@@ -526,11 +693,11 @@ footer {
 }
 .footer-txt {
   font-family: var(--ff-mono); font-size: 0.6rem;
-  letter-spacing: 0.08em; color: rgba(255,255,255,0.22);
+  letter-spacing: 0.08em; color: rgba(255,255,255,0.35);
 }
 
 /* ── Scroll reveal ── */
-.rev { opacity: 0; transform: translateY(18px);
+.rev { opacity: 0; transform: translateY(14px);
   transition: opacity 0.5s ease, transform 0.5s ease; }
 .rev.on { opacity: 1; transform: none; }
 .d1 { transition-delay: 0.06s; } .d2 { transition-delay: 0.12s; }
@@ -546,9 +713,7 @@ footer {
       <div class="brand-mark">DM</div>
       <span class="brand-name">Data Marts &amp; Semantic Layer</span>
     </div>
-    <div class="hdr-right" id="hdr-stats">
-      <!-- filled by JS -->
-    </div>
+    <div class="hdr-right" id="hdr-stats"><!-- filled by JS --></div>
   </div>
 </header>
 
@@ -563,51 +728,49 @@ footer {
       From <span class="hero-title-accent">Models</span><br>to Dashboards
     </h1>
     <p class="hero-body rev d1">
-      Each node below is a building block of the data warehouse — dimension models,
-      fact models, and the Tableau Cube Metrics that depend on them.
-      Edges show which models must ship before a dashboard can go live.
-      Click any node to explore its connections.
+      Tracking progress across dimension models, fact models, and Tableau Cube Metrics.
+      A cube metric can only ship once every required model is complete.
     </p>
-    <div class="stat-row rev d2" id="stat-row">
-      <!-- filled by JS -->
-    </div>
+    <div class="stat-row rev d2" id="stat-row"><!-- filled by JS --></div>
   </div>
 </section>
 
-<!-- ── GRAPH ── -->
-<div class="sec-graph">
-  <div class="graph-toolbar">
-    <span class="graph-title">Dependency Graph</span>
-    <div class="toolbar-btns">
-      <button class="btn-icon" id="btn-fit">Fit View</button>
-      <button class="btn-icon" id="btn-reset">Reset Highlight</button>
+<!-- ── STATUS STRIP ── -->
+<div class="sec-status">
+  <div class="status-inner" id="status-inner"><!-- filled by JS --></div>
+</div>
+
+<!-- ── PROGRESS COLUMNS ── -->
+<div class="sec-progress">
+  <div class="sec-wrap">
+    <div class="sec-label rev">Model &amp; Metric Progress</div>
+    <div class="progress-grid rev d1">
+      <div class="pcol" id="pcol-dims"><!-- filled by JS --></div>
+      <div class="pcol" id="pcol-fcts"><!-- filled by JS --></div>
+      <div class="pcol" id="pcol-cubes"><!-- filled by JS --></div>
     </div>
   </div>
-  <div id="cy"></div>
 </div>
 
-<!-- ── LEGEND ── -->
-<div class="sec-legend">
-  <div class="legend-inner">
-    <span class="legend-label">Node type</span>
-    <span class="chip-dark cd-blue">dim_</span>
-    <span class="chip-dark cd-orange">fct_</span>
-    <span class="chip-dark cd-white">Cube Metric</span>
-    <span class="legend-sep">|</span>
-    <span class="legend-label">Status</span>
-    <span class="chip-dark cd-green">&#10003; complete</span>
-    <span class="chip-dark cd-muted">pending</span>
-    <span class="chip-dark" style="color:rgba(255,255,255,0.55);border-color:rgba(255,255,255,0.2);background:rgba(255,255,255,0.04);">pre-existing</span>
+<!-- ── CUBE METRIC CARDS ── -->
+<div class="sec-cubes">
+  <div class="sec-wrap">
+    <div class="cube-toolbar rev">
+      <div class="sec-label" style="margin-bottom:0">Cube Metric Details &amp; Dependencies</div>
+      <div class="filter-bar">
+        <input type="text" id="cube-search" class="search-input" placeholder="Search cubes&#8230;"/>
+        <div class="fchip-group" id="filter-chips">
+          <button class="fchip fc-active" data-status="all">All</button>
+          <button class="fchip fc-blocked" data-status="blocked">&#9650; Blocked</button>
+          <button class="fchip fc-ready" data-status="ready">Ready</button>
+          <button class="fchip fc-done" data-status="done">Done</button>
+        </div>
+        <span class="filter-count" id="filter-count"></span>
+        <button class="filter-clear-btn" id="filter-clear" style="display:none">Clear</button>
+      </div>
+    </div>
+    <div class="cube-grid rev d1" id="cube-grid"><!-- filled by JS --></div>
   </div>
-</div>
-
-<!-- ── INFO PANEL ── -->
-<div id="info-panel">
-  <button class="panel-close" id="panel-close-btn" title="Close">&#10005;</button>
-  <div class="panel-type-row" id="panel-type-row"></div>
-  <div class="panel-name" id="panel-name"></div>
-  <div class="panel-desc" id="panel-desc"></div>
-  <div id="panel-extra"></div>
 </div>
 
 <!-- ── FOOTER ── -->
@@ -619,222 +782,307 @@ footer {
 </footer>
 
 <script>
-const ELEMENTS   = __ELEMENTS__;
-const STATS      = __STATS__;
+const ELEMENTS    = __ELEMENTS__;
+const STATS       = __STATS__;
 const LAST_UPDATED = "__UPDATED__";
 
-// ── Populate header + hero stats ──────────────────────────────────────────
-function pct(done, total) {
-  return total ? Math.round(done / total * 100) : 0;
+// ── Parse ──────────────────────────────────────────────────────────────────
+const nodes   = ELEMENTS.filter(e => e.data && !e.data.source);
+const edges   = ELEMENTS.filter(e => e.data && e.data.source);
+const nodeMap = Object.fromEntries(nodes.map(n => [n.data.id, n.data]));
+
+const dims  = nodes.filter(n => n.data.type === 'dim') .sort((a,b) => a.data.id.localeCompare(b.data.id));
+const fcts  = nodes.filter(n => n.data.type === 'fct') .sort((a,b) => a.data.id.localeCompare(b.data.id));
+const cubes = nodes.filter(n => n.data.type === 'cube').sort((a,b) => a.data.id.localeCompare(b.data.id));
+
+// Build cube → deps lookup
+const cubeDeps = {};
+cubes.forEach(c => { cubeDeps[c.data.id] = []; });
+edges.forEach(e => {
+  const { source, target } = e.data;
+  if (cubeDeps[target] !== undefined) {
+    const dep = nodeMap[source];
+    if (dep) cubeDeps[target].push(dep);
+  }
+});
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function pct(done, total) { return total ? Math.round(done / total * 100) : 0; }
+function progBar(done, total, color) {
+  return `<div class="prog-track"><div class="prog-fill" style="width:${pct(done,total)}%;background:${color}"></div></div>`;
 }
-function statChip(done, total, cls, label) {
-  return `<span class="chip ${cls}">${done}/${total} ${label}</span>`;
-}
+
+// ── Header chips ───────────────────────────────────────────────────────────
 document.getElementById('hdr-stats').innerHTML = [
-  statChip(STATS.dims_done,  STATS.dims_total,  'c-blue',   'dims'),
-  statChip(STATS.fcts_done,  STATS.fcts_total,  'c-orange', 'facts'),
-  statChip(STATS.cubes_done, STATS.cubes_total, 'c-gold',   'cube metrics'),
+  `<span class="chip c-blue">${STATS.dims_done}/${STATS.dims_total} dims</span>`,
+  `<span class="chip c-orange">${STATS.fcts_done}/${STATS.fcts_total} facts</span>`,
+  `<span class="chip c-gold">${STATS.cubes_done}/${STATS.cubes_total} cube metrics</span>`,
 ].join('');
 
+// ── Hero stats ─────────────────────────────────────────────────────────────
+function heroStat(done, total, label, color) {
+  const p = pct(done, total);
+  return `<div class="stat-item">
+    <span class="stat-value">${done}<span class="stat-denom">/${total}</span></span>
+    <span class="stat-label">${label}</span>
+    <div class="stat-bar"><div class="stat-bar-fill" style="width:${p}%;background:${color}"></div></div>
+  </div>`;
+}
 document.getElementById('stat-row').innerHTML = [
-  `<div class="stat-item">
-     <span class="stat-value">${STATS.dims_done}<span style="color:var(--g3);font-size:1.2rem">/${STATS.dims_total}</span></span>
-     <span class="stat-label">Dimensions</span>
-   </div>`,
-  `<div class="stat-item">
-     <span class="stat-value">${STATS.fcts_done}<span style="color:var(--g3);font-size:1.2rem">/${STATS.fcts_total}</span></span>
-     <span class="stat-label">Facts</span>
-   </div>`,
-  `<div class="stat-item">
-     <span class="stat-value">${STATS.cubes_done}<span style="color:var(--g3);font-size:1.2rem">/${STATS.cubes_total}</span></span>
-     <span class="stat-label">Cube Metrics</span>
-   </div>`,
+  heroStat(STATS.dims_done,  STATS.dims_total,  'Dimensions',  '#57C0E9'),
+  heroStat(STATS.fcts_done,  STATS.fcts_total,  'Facts',       '#F9A21A'),
+  heroStat(STATS.cubes_done, STATS.cubes_total, 'Cube Metrics','#b45309'),
 ].join('');
 
-// ── Cytoscape ─────────────────────────────────────────────────────────────
-cytoscape.use(cytoscapeDagre);
-
-const BLUE   = '#57C0E9';
-const ORANGE = '#F9A21A';
-const WHITE  = '#FFFFFF';
-const INDIGO = '#001E62';
-const GREEN  = '#4ADE80';
-
-const cy = cytoscape({
-  container: document.getElementById('cy'),
-  elements: ELEMENTS,
-  layout: {
-    name: 'preset',
-    fit: true,
-    padding: 80,
-  },
-  style: [
-    // ── Base node ──
-    {
-      selector: 'node',
-      style: {
-        'font-family':    "'JetBrains Mono', monospace",
-        'font-size':      '8.5px',
-        'font-weight':    '600',
-        'text-valign':    'center',
-        'text-halign':    'center',
-        'text-wrap':      'wrap',
-        'text-max-width': '160px',
-        'width':          '185px',
-        'height':         '36px',
-        'shape':          'round-rectangle',
-        'transition-property': 'opacity',
-        'transition-duration': '0.2s',
-      }
-    },
-    // ── Dim nodes ──
-    {
-      selector: 'node[type="dim"][status="complete"]',
-      style: { 'background-color': BLUE, 'color': INDIGO, 'border-width': 0 }
-    },
-    {
-      selector: 'node[type="dim"][status="pending"]',
-      style: { 'background-color': 'transparent', 'border-color': BLUE,
-               'border-width': '2px', 'color': BLUE, 'border-style': 'dashed' }
-    },
-    {
-      selector: 'node[type="dim"][status="existing"]',
-      style: { 'background-color': BLUE, 'color': INDIGO,
-               'border-width': 0, 'opacity': 0.45 }
-    },
-    // ── Fact nodes ──
-    {
-      selector: 'node[type="fct"][status="complete"]',
-      style: { 'background-color': ORANGE, 'color': INDIGO, 'border-width': 0 }
-    },
-    {
-      selector: 'node[type="fct"][status="pending"]',
-      style: { 'background-color': 'transparent', 'border-color': ORANGE,
-               'border-width': '2px', 'color': ORANGE, 'border-style': 'dashed' }
-    },
-    {
-      selector: 'node[type="fct"][status="existing"]',
-      style: { 'background-color': ORANGE, 'color': INDIGO,
-               'border-width': 0, 'opacity': 0.45 }
-    },
-    // ── Cube metric nodes ──
-    {
-      selector: 'node[type="cube"]',
-      style: { 'height': '54px', 'font-size': '8px', 'line-height': '1.4' }
-    },
-    {
-      selector: 'node[type="cube"][status="complete"]',
-      style: { 'background-color': WHITE, 'color': INDIGO, 'border-width': 0 }
-    },
-    {
-      selector: 'node[type="cube"][status="pending"]',
-      style: { 'background-color': 'transparent',
-               'border-color': 'rgba(255,255,255,0.55)', 'border-width': '2px',
-               'color': 'rgba(255,255,255,0.55)', 'border-style': 'dashed' }
-    },
-    {
-      selector: 'node[type="cube"][status="existing"]',
-      style: { 'background-color': WHITE, 'color': INDIGO,
-               'border-width': 0, 'opacity': 0.45 }
-    },
-    // ── Edges ──
-    {
-      selector: 'edge',
-      style: {
-        'line-color':          'rgba(255,255,255,0.1)',
-        'target-arrow-color':  'rgba(255,255,255,0.1)',
-        'target-arrow-shape':  'triangle',
-        'arrow-scale':         0.7,
-        'curve-style':         'bezier',
-        'width':               1.2,
-      }
-    },
-    // ── Interaction states ──
-    { selector: '.cy-dimmed',      style: { 'opacity': 0.06 } },
-    { selector: 'node.cy-dimmed',  style: { 'opacity': 0.06 } },
-    { selector: 'edge.cy-highlight', style: {
-        'line-color':         'rgba(255,255,255,0.65)',
-        'target-arrow-color': 'rgba(255,255,255,0.65)',
-        'width': 2,
-    }},
-    { selector: 'node.cy-highlight', style: { 'opacity': 1 } },
-  ],
-  wheelSensitivity: 0.3,
-  minZoom: 0.05,
-  maxZoom: 4,
-  userPanningEnabled: true,
-  userZoomingEnabled: true,
+// ── Status strip ───────────────────────────────────────────────────────────
+const doneCubes    = cubes.filter(c => c.data.status === 'complete');
+const readyBICount = cubes.reduce((sum, c) => sum + (c.data.sub_done || 0), 0);
+const totalMetrics  = cubes.reduce((sum, c) => sum + (c.data.sub_total || 0), 0);
+const blockedCubes = cubes.filter(c => {
+  const deps = cubeDeps[c.data.id] || [];
+  return c.data.status !== 'complete' && deps.some(d => d.status !== 'complete');
 });
+const readyCubes   = cubes.filter(c => {
+  const deps = cubeDeps[c.data.id] || [];
+  return c.data.status !== 'complete' && deps.every(d => d.status === 'complete');
+});
+const pendingDimCount = dims.filter(n => n.data.status !== 'complete').length;
+const pendingFctCount = fcts.filter(n => n.data.status !== 'complete').length;
+const totalPending    = pendingDimCount + pendingFctCount;
 
-// ── Interaction ───────────────────────────────────────────────────────────
-function resetHighlight() {
-  cy.elements().removeClass('cy-dimmed cy-highlight');
+document.getElementById('status-inner').innerHTML = `
+  <span class="status-eyebrow">At a glance</span>
+  <div class="status-block">
+    <span class="status-num">${totalPending}</span>
+    <span class="status-desc">models<br>outstanding</span>
+  </div>
+  <div class="status-divider"></div>
+  <div class="status-block">
+    <span class="status-num">${pendingDimCount}</span>
+    <span class="status-desc">dim${pendingDimCount !== 1 ? 's' : ''}<br>pending</span>
+  </div>
+  <div class="status-block">
+    <span class="status-num">${pendingFctCount}</span>
+    <span class="status-desc">fact${pendingFctCount !== 1 ? 's' : ''}<br>pending</span>
+  </div>
+  <div class="status-badges">
+    ${blockedCubes.length ? `<span class="status-badge sb-blocked">${blockedCubes.length} cube${blockedCubes.length !== 1 ? 's' : ''} blocked</span>` : ''}
+    ${readyCubes.length   ? `<span class="status-badge sb-ready">${readyCubes.length} ready for Cube</span>` : ''}
+    <span class="status-badge sb-bi">${readyBICount}/${totalMetrics} ready for BI</span>
+    ${doneCubes.length    ? `<span class="status-badge sb-done">${doneCubes.length} complete</span>` : ''}
+  </div>
+`;
+
+// ── Progress columns ───────────────────────────────────────────────────────
+function renderPcol(id, typeLabel, typeClass, color, items, getAside) {
+  const done  = items.filter(n => n.data.status === 'complete').length;
+  const total = items.length;
+  const rows  = items.map(n => {
+    const d    = n.data;
+    const ok   = d.status === 'complete';
+    const aside = getAside ? getAside(d) : '';
+    return `<li class="il-row ${ok ? '' : 'is-pending'}">
+      <span class="il-dot ${ok ? 'il-dot-done' : 'il-dot-pending'}"></span>
+      <span class="il-name" title="${d.id}">${d.id}</span>
+      <span class="il-aside">
+        ${aside}
+        <span class="il-badge ${ok ? 'ilb-done' : 'ilb-pending'}">${ok ? 'done' : 'pending'}</span>
+      </span>
+    </li>`;
+  }).join('');
+  document.getElementById(id).innerHTML = `
+    <div class="pcol-head">
+      <div class="pcol-type ${typeClass}">${typeLabel}</div>
+      <div class="pcol-score">${done}<span class="pcol-score-denom">/${total}</span></div>
+      ${progBar(done, total, color)}
+    </div>
+    <ul class="item-list">${rows}</ul>
+  `;
 }
 
-cy.on('tap', 'node', function(evt) {
-  const node = evt.target;
-  const d    = node.data();
+renderPcol('pcol-dims', 'Dimensions', 'pt-dim', '#57C0E9', dims, null);
+renderPcol('pcol-fcts', 'Facts',      'pt-fct', '#F9A21A', fcts, null);
+renderPcol('pcol-cubes', 'Cube Metrics', 'pt-cube', '#b45309', cubes, d => {
+  const deps    = cubeDeps[d.id] || [];
+  const nBlocked = deps.filter(dep => dep.status !== 'complete').length;
+  const metricsTxt = d.sub_total > 0
+    ? `<span class="il-meta">${d.sub_done}/${d.sub_total} metrics</span>` : '';
+  const blockTxt = nBlocked > 0 && d.status !== 'complete'
+    ? `<span class="il-badge ilb-blocked">&#9650; ${nBlocked}</span>` : '';
+  return metricsTxt + blockTxt;
+});
 
-  // Highlight subgraph
-  cy.elements().addClass('cy-dimmed');
-  const hood = node.closedNeighborhood();
-  hood.removeClass('cy-dimmed').addClass('cy-highlight');
+// ── Cube detail cards ──────────────────────────────────────────────────────
+const cubeCardsHtml = cubes.map(c => {
+  const d        = c.data;
+  const deps     = cubeDeps[d.id] || [];
+  const pendDeps = deps.filter(dep => dep.status !== 'complete');
+  const doneDeps = deps.filter(dep => dep.status === 'complete');
 
-  // Info panel
-  const typeLabel = { dim: 'Dimension', fct: 'Fact', cube: 'Cube Metric' }[d.type];
-  const typeClass = { dim: 'c-blue', fct: 'c-orange', cube: 'c-gold' }[d.type];
-  const statusLabel = { complete: 'complete', pending: 'pending', existing: 'pre-existing' }[d.status];
-  const statusClass = { complete: 'c-green', pending: 'c-muted', existing: 'c-muted' }[d.status];
+  // Card state
+  let cardCls, statusHtml, stateKey;
+  if (d.status === 'complete') {
+    stateKey   = 'done';
+    cardCls    = 'cube-card cc-done';
+    statusHtml = '<span class="chip c-green">&#10003; complete</span>';
+  } else if (pendDeps.length > 0) {
+    stateKey   = 'blocked';
+    cardCls    = 'cube-card cc-blocked';
+    statusHtml = `<span class="chip c-red">&#9650; ${pendDeps.length} blocked</span>`;
+  } else {
+    stateKey   = 'ready';
+    cardCls    = 'cube-card cc-ready';
+    statusHtml = '<span class="chip c-gold">ready</span>';
+  }
+  const safeId = d.id.replace(/"/g, '&quot;');
 
-  document.getElementById('panel-type-row').innerHTML =
-    `<span class="chip ${typeClass}">${typeLabel}</span>` +
-    `<span class="chip ${statusClass}">${statusLabel}</span>`;
+  // Subtask metrics
+  let metricsHtml = '';
+  if (d.sub_total > 0) {
+    const mp = pct(d.sub_done, d.sub_total);
+    const subRows = d.subtasks.map(s => `
+      <li class="cc-sub-row ${s.done ? 'cc-sub-done' : 'cc-sub-pending'}">
+        <span class="cc-sub-dot"></span>
+        <span class="cc-sub-name">${s.name}</span>
+      </li>`).join('');
+    metricsHtml = `
+      <div class="cc-metrics">
+        <div class="cc-metrics-header">
+          <span class="cc-metrics-label">Metrics</span>
+          <span class="cc-metrics-count">${d.sub_done}/${d.sub_total} done (${mp}%)</span>
+        </div>
+        <div class="cc-track"><div class="cc-fill" style="width:${mp}%;background:#b45309"></div></div>
+        <ul class="cc-sub-list">${subRows}</ul>
+      </div>`;
+  }
 
-  document.getElementById('panel-name').textContent = d.id;
-  document.getElementById('panel-desc').textContent = d.desc || '';
+  // Dependencies
+  let depsHtml;
+  if (deps.length > 0) {
+    const sorted   = [...pendDeps, ...doneDeps];
+    const depLabel = pendDeps.length > 0
+      ? `Required models — ${pendDeps.length} still pending`
+      : `Required models — all complete`;
+    const depRows  = sorted.map(dep => {
+      const ok = dep.status === 'complete';
+      return `<li class="cc-dep ${ok ? 'dep-done' : 'dep-pending'}">
+        <span class="cc-dep-indicator"></span>
+        <span class="cc-dep-name">${dep.id}</span>
+        <span class="cc-dep-type">${dep.type}</span>
+      </li>`;
+    }).join('');
+    depsHtml = `<div class="cc-deps">
+      <div class="cc-deps-label">${depLabel}</div>
+      <ul class="cc-dep-list">${depRows}</ul>
+    </div>`;
+  } else {
+    depsHtml = `<div class="cc-deps"><p class="cc-no-deps">No model dependencies tracked in Asana.</p></div>`;
+  }
 
-  let extra = '';
-  if (d.type === 'cube') {
-    if (d.sub_total > 0) {
-      const pct = Math.round(d.sub_done / d.sub_total * 100);
-      const subItems = d.subtasks.map(s =>
-        `<li class="${s.done ? 'done' : ''}">
-           <span class="sub-icon">${s.done ? '✓' : '○'}</span>${s.name}
-         </li>`
-      ).join('');
-      extra += `<div class="panel-section-label">Metrics — ${d.sub_done}/${d.sub_total} complete (${pct}%)</div>
-        <ul class="panel-rpt-list sub-list">${subItems}</ul>`;
+  return `<div class="${cardCls}" data-name="${safeId}" data-state="${stateKey}">
+    <div class="cc-top">
+      <div class="cc-name">${d.id}</div>
+      <div class="cc-status">${statusHtml}</div>
+    </div>
+    ${metricsHtml}
+    ${depsHtml}
+  </div>`;
+}).join('');
+
+document.getElementById('cube-grid').innerHTML = cubeCardsHtml
+  || '<p style="color:var(--g3);font-family:var(--ff-mono);font-size:0.75rem">No cube metrics found.</p>';
+
+// ── Filter & multiselect ───────────────────────────────────────────────────
+const selectedIds = new Set();
+
+function applyFilter() {
+  const query  = document.getElementById('cube-search').value.toLowerCase().trim();
+  const status = document.querySelector('#filter-chips .fchip.fc-active').dataset.status;
+  const total  = cubes.length;
+  let shown    = 0;
+
+  document.querySelectorAll('#cube-grid .cube-card').forEach(card => {
+    const name  = card.dataset.name;
+    const state = card.dataset.state;
+    let visible;
+    if (selectedIds.size > 0) {
+      visible = selectedIds.has(name);
+    } else {
+      const matchQ = !query || name.toLowerCase().includes(query);
+      const matchS = status === 'all' || state === status;
+      visible = matchQ && matchS;
     }
-  }
-  document.getElementById('panel-extra').innerHTML = extra;
-  document.getElementById('info-panel').classList.add('open');
+    card.style.display = visible ? '' : 'none';
+    if (visible) shown++;
+  });
+
+  document.getElementById('filter-count').textContent =
+    shown < total ? `${shown} of ${total}` : `${total} total`;
+
+  const hasClear = selectedIds.size > 0 || query || status !== 'all';
+  document.getElementById('filter-clear').style.display = hasClear ? '' : 'none';
+}
+
+// Status chip buttons
+document.querySelectorAll('#filter-chips .fchip').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#filter-chips .fchip').forEach(b => b.classList.remove('fc-active'));
+    btn.classList.add('fc-active');
+    // Clicking a status filter clears list-click selection
+    selectedIds.clear();
+    document.querySelectorAll('#pcol-cubes .il-row-click').forEach(r => r.classList.remove('il-selected'));
+    applyFilter();
+  });
 });
 
-cy.on('tap', function(evt) {
-  if (evt.target === cy) {
-    resetHighlight();
-    document.getElementById('info-panel').classList.remove('open');
-  }
+// Search input
+document.getElementById('cube-search').addEventListener('input', () => {
+  selectedIds.clear();
+  document.querySelectorAll('#pcol-cubes .il-row-click').forEach(r => r.classList.remove('il-selected'));
+  applyFilter();
 });
 
-document.getElementById('panel-close-btn').addEventListener('click', function() {
-  resetHighlight();
-  document.getElementById('info-panel').classList.remove('open');
+// Clear button
+document.getElementById('filter-clear').addEventListener('click', () => {
+  selectedIds.clear();
+  document.getElementById('cube-search').value = '';
+  document.querySelectorAll('#pcol-cubes .il-row-click').forEach(r => r.classList.remove('il-selected'));
+  document.querySelectorAll('#filter-chips .fchip').forEach(b => b.classList.remove('fc-active'));
+  document.querySelector('#filter-chips .fchip[data-status="all"]').classList.add('fc-active');
+  applyFilter();
 });
 
-document.getElementById('btn-fit').addEventListener('click', function() {
-  cy.fit(80);
+// Click-to-filter on cube progress list items
+document.querySelectorAll('#pcol-cubes .il-row').forEach(row => {
+  const name = row.querySelector('.il-name')?.getAttribute('title');
+  if (!name) return;
+  row.classList.add('il-row-click');
+  row.title = 'Click to filter';
+  row.addEventListener('click', () => {
+    if (selectedIds.has(name)) {
+      selectedIds.delete(name);
+      row.classList.remove('il-selected');
+    } else {
+      selectedIds.add(name);
+      row.classList.add('il-selected');
+      // Reset status chips to "All" so selection takes precedence
+      document.querySelectorAll('#filter-chips .fchip').forEach(b => b.classList.remove('fc-active'));
+      document.querySelector('#filter-chips .fchip[data-status="all"]').classList.add('fc-active');
+    }
+    applyFilter();
+    if (selectedIds.size === 1) {
+      document.querySelector('.sec-cubes').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
 });
 
-document.getElementById('btn-reset').addEventListener('click', function() {
-  resetHighlight();
-  document.getElementById('info-panel').classList.remove('open');
-});
+// Init count
+applyFilter();
 
-// ── Scroll reveal ─────────────────────────────────────────────────────────
+// ── Scroll reveal ──────────────────────────────────────────────────────────
 const revObs = new IntersectionObserver(entries => {
   entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('on'); });
-}, { threshold: 0.1 });
+}, { threshold: 0.05 });
 document.querySelectorAll('.rev').forEach(el => revObs.observe(el));
 </script>
 </body>
