@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Data Marts & Semantic Layer — Progress</title>
+<title>Data Marts + Semantic Layer — Progress</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
@@ -72,6 +72,7 @@ header {
 }
 .c-blue   { color: #0c6b96;   border-color: rgba(87,192,233,0.5);   background: rgba(87,192,233,0.12);  }
 .c-orange { color: #92400e;   border-color: rgba(249,162,26,0.5);   background: rgba(249,162,26,0.12);  }
+.c-amber  { color: #d97706;   border-color: rgba(249,162,26,0.6);   background: rgba(249,162,26,0.18);  }
 .c-green  { color: #166534;   border-color: rgba(34,197,94,0.45);   background: rgba(34,197,94,0.10);   }
 .c-muted  { color: var(--g4); border-color: var(--g2);              background: var(--g1);              }
 .c-purple { color: #5b21b6;   border-color: rgba(139,92,246,0.45);  background: rgba(139,92,246,0.10);  }
@@ -573,10 +574,10 @@ footer {
 .ps-source .gd-pipe-label { color: var(--indigo); }
 .ps-schema .gd-pipe-icon { background: rgba(87,192,233,0.12); color: #0c6b96; }
 .ps-schema .gd-pipe-label { color: #0c6b96; }
-.ps-cube   .gd-pipe-icon { background: rgba(249,162,26,0.12); color: #92400e; }
-.ps-cube   .gd-pipe-label { color: #92400e; }
-.ps-metric .gd-pipe-icon { background: rgba(139,92,246,0.12); color: #5b21b6; }
-.ps-metric .gd-pipe-label { color: #5b21b6; }
+.ps-cube   .gd-pipe-icon { background: rgba(139,92,246,0.12); color: #5b21b6; }
+.ps-cube   .gd-pipe-label { color: #5b21b6; }
+.ps-metric .gd-pipe-icon { background: rgba(249,162,26,0.18); color: #d97706; }
+.ps-metric .gd-pipe-label { color: #d97706; }
 .ps-bi     .gd-pipe-icon { background: rgba(34,197,94,0.12);  color: #166534; }
 .ps-bi     .gd-pipe-label { color: #166534; }
 
@@ -618,7 +619,7 @@ body.gd-lock { overflow: hidden; }
   <div class="hdr">
     <div class="brand">
       <div class="brand-mark">DM</div>
-      <span class="brand-name">Data Marts &amp; Semantic Layer</span>
+      <span class="brand-name">Data Marts + Semantic Layer</span>
     </div>
     <div class="hdr-right" id="hdr-stats"></div>
   </div>
@@ -680,7 +681,7 @@ body.gd-lock { overflow: hidden; }
 
       <div class="gd-term-card">
         <div class="gd-term-head">
-          <span class="gd-term-chip chip c-orange">Semantic Layer</span>
+          <span class="gd-term-chip chip c-purple">Semantic Layer</span>
           <h4 class="gd-term-name">Cube</h4>
         </div>
         <p class="gd-term-def">Where we <strong>join both types of models</strong> to give facts more context. A Cube is a pre-assembled, validated view — ready to analyze without needing to know the underlying table structure.</p>
@@ -692,7 +693,7 @@ body.gd-lock { overflow: hidden; }
 
       <div class="gd-term-card">
         <div class="gd-term-head">
-          <span class="gd-term-chip chip c-orange">Semantic Layer</span>
+          <span class="gd-term-chip chip c-amber">Semantic Layer</span>
           <h4 class="gd-term-name">Metric</h4>
         </div>
         <p class="gd-term-def">A single, officially defined number with a <strong>shared formula</strong> so every school and department is measuring the same thing the same way. Since facts are joined to dimensions in the semantic layer, metrics can be sliced and aggregated by any category.</p>
@@ -818,7 +819,7 @@ body.gd-lock { overflow: hidden; }
 <!-- ── FOOTER ── -->
 <footer>
   <div class="footer-inner">
-    <span class="footer-txt">Data Marts &amp; Semantic Layer &mdash; KTAF</span>
+    <span class="footer-txt">Data Marts + Semantic Layer &mdash; KTAF</span>
     <span class="footer-txt">Last updated: March 27, 2026 at 4:59 PM</span>
   </div>
 </footer>
