@@ -191,11 +191,15 @@ header {
 }
 .status-inner {
   max-width: var(--mw); margin: 0 auto;
-  display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;
+  display: flex; flex-direction: column; gap: 0.5rem;
 }
 .status-eyebrow {
-  font-family: var(--ff-head); font-size: 1.6rem; font-weight: 800;
-  line-height: 1; color: var(--white);
+  font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+}
+.status-stats {
+  display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;
 }
 .status-divider { width: 1px; height: 28px; background: rgba(255,255,255,0.12); flex-shrink: 0; }
 .status-block { display: flex; flex-direction: column; gap: 0.15rem; }
@@ -618,8 +622,7 @@ body.gd-lock { overflow: hidden; }
 
   /* Status strip: tighten up */
   .sec-status { padding: 0.75rem 1rem; }
-  .status-inner { gap: 1rem; }
-  .status-eyebrow,
+  .status-stats { gap: 1.25rem; }
   .status-num { font-size: 1.2rem; }
   .status-lbl { font-size: 0.6rem; }
   .status-divider { height: 22px; }
@@ -927,20 +930,21 @@ cubes.forEach(c => {
 
 document.getElementById('status-inner').innerHTML = `
   <span class="status-eyebrow">Metrics Progress</span>
-  <div class="status-divider"></div>
-  <div class="status-block">
-    <span class="status-num sn-blocked">${metricsBlocked}</span>
-    <span class="status-lbl">Blocked</span>
-  </div>
-  <div class="status-divider"></div>
-  <div class="status-block">
-    <span class="status-num sn-ready">${metricsReadyCube}</span>
-    <span class="status-lbl">Pending for Cube</span>
-  </div>
-  <div class="status-divider"></div>
-  <div class="status-block">
-    <span class="status-num sn-bi">${readyBICount}</span>
-    <span class="status-lbl">Ready for BI</span>
+  <div class="status-stats">
+    <div class="status-block">
+      <span class="status-num sn-blocked">${metricsBlocked}</span>
+      <span class="status-lbl">Blocked</span>
+    </div>
+    <div class="status-divider"></div>
+    <div class="status-block">
+      <span class="status-num sn-ready">${metricsReadyCube}</span>
+      <span class="status-lbl">Pending for Cube</span>
+    </div>
+    <div class="status-divider"></div>
+    <div class="status-block">
+      <span class="status-num sn-bi">${readyBICount}</span>
+      <span class="status-lbl">Ready for BI</span>
+    </div>
   </div>
 `;
 
