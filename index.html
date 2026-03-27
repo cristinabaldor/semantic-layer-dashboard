@@ -74,6 +74,7 @@ header {
 .c-orange { color: #92400e;   border-color: rgba(249,162,26,0.5);   background: rgba(249,162,26,0.12);  }
 .c-green  { color: #166534;   border-color: rgba(34,197,94,0.45);   background: rgba(34,197,94,0.10);   }
 .c-muted  { color: var(--g4); border-color: var(--g2);              background: var(--g1);              }
+.c-purple { color: #5b21b6;   border-color: rgba(139,92,246,0.45);  background: rgba(139,92,246,0.10);  }
 .c-gold   { color: #92400e;   border-color: rgba(180,83,9,0.35);    background: rgba(251,191,36,0.12);  }
 .c-red    { color: #991b1b;   border-color: rgba(239,68,68,0.45);   background: rgba(239,68,68,0.09);   }
 
@@ -184,7 +185,7 @@ header {
 /* ── Status strip (dark indigo) ── */
 .sec-status {
   background: var(--indigo);
-  padding: 1.5rem 2rem;
+  padding: 0.85rem 2rem;
   border-bottom: 3px solid rgba(255,255,255,0.06);
 }
 .status-inner {
@@ -192,13 +193,13 @@ header {
   display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;
 }
 .status-eyebrow {
-  font-family: var(--ff-head); font-size: 2.4rem; font-weight: 800;
+  font-family: var(--ff-head); font-size: 1.6rem; font-weight: 800;
   line-height: 1; color: var(--white);
 }
-.status-divider { width: 1px; height: 36px; background: rgba(255,255,255,0.12); flex-shrink: 0; }
-.status-block { display: flex; flex-direction: column; gap: 0.2rem; }
+.status-divider { width: 1px; height: 28px; background: rgba(255,255,255,0.12); flex-shrink: 0; }
+.status-block { display: flex; flex-direction: column; gap: 0.15rem; }
 .status-num {
-  font-family: var(--ff-head); font-size: 2.4rem; font-weight: 800;
+  font-family: var(--ff-head); font-size: 1.6rem; font-weight: 800;
   line-height: 1;
 }
 .sn-blocked { color: var(--g3); }
@@ -236,7 +237,7 @@ header {
   background: var(--white);
   border: 1px solid var(--g2);
   border-radius: var(--r-lg);
-  overflow: hidden;
+  overflow: visible;
 }
 .pcol-head {
   padding: 1rem 1.2rem 0.9rem;
@@ -291,7 +292,7 @@ header {
   border-radius: 3px; padding: 0.1rem 0.4rem; border: 1px solid;
 }
 .ilb-done    { color: #166534; border-color: rgba(34,197,94,0.4);  background: rgba(34,197,94,0.08);  }
-.ilb-pending { color: var(--g4); border-color: var(--g2);          background: transparent;           }
+.ilb-pending { color: #92400e; border-color: rgba(249,162,26,0.45); background: rgba(249,162,26,0.09); }
 .ilb-blocked { color: #991b1b; border-color: rgba(239,68,68,0.4);  background: rgba(239,68,68,0.07);  }
 .ilb-ready   { color: #92400e; border-color: rgba(249,162,26,0.45); background: rgba(249,162,26,0.09); }
 .il-meta {
@@ -471,6 +472,143 @@ footer {
 .rev.on { opacity: 1; transform: none; }
 .d1 { transition-delay: 0.06s; } .d2 { transition-delay: 0.12s; }
 .d3 { transition-delay: 0.18s; } .d4 { transition-delay: 0.24s; }
+
+/* ── Glossary Button ── */
+.glossary-btn {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  font-family: var(--ff-mono); font-size: 0.63rem; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--white); background: var(--indigo);
+  border: none; border-radius: 6px; padding: 0.45rem 1rem;
+  cursor: pointer; transition: background 0.15s, box-shadow 0.15s; white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0,30,98,0.18);
+}
+.glossary-btn:hover { background: #002f8f; box-shadow: 0 2px 8px rgba(0,30,98,0.28); }
+.glossary-btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+/* ── Glossary Overlay ── */
+.glossary-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.4); backdrop-filter: blur(2px);
+  opacity: 0; pointer-events: none; transition: opacity 0.28s ease;
+}
+.glossary-overlay.gd-visible { opacity: 1; pointer-events: auto; }
+
+/* ── Glossary Drawer ── */
+.glossary-drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 201;
+  width: min(480px, 100vw); background: var(--white);
+  box-shadow: -4px 0 40px rgba(0,0,0,0.12);
+  display: flex; flex-direction: column; overflow: hidden;
+  transform: translateX(100%);
+  transition: transform 0.32s cubic-bezier(0.4,0,0.2,1);
+  outline: none;
+}
+.glossary-drawer.gd-open { transform: translateX(0); }
+
+.gd-header {
+  flex-shrink: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+  padding: 1.4rem 1.5rem 1.2rem; border-bottom: 1px solid var(--g2);
+}
+.gd-title-group { display: flex; flex-direction: column; gap: 0.25rem; }
+.gd-eyebrow {
+  font-family: var(--ff-mono); font-size: 0.58rem; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase; color: #0c6b96;
+}
+.gd-title {
+  font-family: var(--ff-head); font-size: 1.5rem; font-weight: 800;
+  color: var(--indigo); line-height: 1.1; letter-spacing: -0.01em; margin: 0;
+}
+.gd-close-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; flex-shrink: 0; border-radius: var(--r);
+  border: 1px solid var(--g2); background: var(--g1); color: var(--g4);
+  cursor: pointer; transition: background 0.12s, color 0.12s; margin-top: 0.1rem;
+}
+.gd-close-btn:hover { background: var(--g2); color: var(--g5); }
+.gd-close-btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+.gd-body {
+  flex: 1; overflow-y: auto; padding: 1.5rem;
+  display: flex; flex-direction: column; gap: 2rem; scroll-behavior: smooth;
+}
+.gd-body::-webkit-scrollbar { width: 4px; }
+.gd-body::-webkit-scrollbar-thumb { background: var(--g2); border-radius: 2px; }
+
+.gd-section-label {
+  font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--g3); margin-bottom: 0.85rem;
+}
+
+/* ── Pipeline Bar ── */
+.pipeline-bar {
+  background: var(--white);
+  border-bottom: 2px solid var(--g2);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+}
+.pipeline-bar-inner {
+  max-width: var(--mw); margin: 0 auto;
+  padding: 1.4rem 2rem;
+  display: flex; align-items: center; gap: 2rem;
+}
+
+/* ── Pipeline Diagram ── */
+.gd-pipeline-track {
+  flex: 1; display: flex; align-items: flex-start;
+}
+.gd-pipe-step {
+  flex: 1 1 0; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 0.4rem; text-align: center;
+}
+.gd-pipe-icon {
+  width: 52px; height: 52px; border-radius: 12px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.gd-pipe-label { font-family: var(--ff-mono); font-size: 0.64rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; line-height: 1.25; word-break: break-word; }
+.gd-pipe-sub { font-family: var(--ff-body); font-size: 0.7rem; color: var(--g4); line-height: 1.35; }
+/* Arrow: margin-top centers it with the 52px icon — (52 - 12) / 2 = 20px */
+.gd-pipe-arrow { flex-shrink: 0; color: var(--g3); padding: 0 0.1rem; margin-top: 20px; }
+
+.ps-source .gd-pipe-icon { background: rgba(0,30,98,0.08);   color: var(--indigo); }
+.ps-source .gd-pipe-label { color: var(--indigo); }
+.ps-schema .gd-pipe-icon { background: rgba(87,192,233,0.12); color: #0c6b96; }
+.ps-schema .gd-pipe-label { color: #0c6b96; }
+.ps-cube   .gd-pipe-icon { background: rgba(249,162,26,0.12); color: #92400e; }
+.ps-cube   .gd-pipe-label { color: #92400e; }
+.ps-metric .gd-pipe-icon { background: rgba(139,92,246,0.12); color: #5b21b6; }
+.ps-metric .gd-pipe-label { color: #5b21b6; }
+.ps-bi     .gd-pipe-icon { background: rgba(34,197,94,0.12);  color: #166534; }
+.ps-bi     .gd-pipe-label { color: #166534; }
+
+/* ── Glossary Term Cards ── */
+.gd-glossary { display: flex; flex-direction: column; gap: 0.85rem; }
+.gd-term-card {
+  border: 1px solid var(--g2); border-radius: var(--r-lg);
+  padding: 1.1rem 1.25rem; background: var(--white); transition: box-shadow 0.15s;
+}
+.gd-term-card:hover { box-shadow: 0 3px 14px rgba(0,0,0,0.06); }
+.gd-term-card--highlight { border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.03); }
+.gd-term-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.6rem; flex-wrap: wrap; }
+.gd-term-chip { font-size: 0.58rem; }
+.gd-term-name { font-family: var(--ff-head); font-size: 1.1rem; font-weight: 700; color: var(--indigo); letter-spacing: -0.01em; margin: 0; }
+.gd-term-def { font-size: 0.82rem; line-height: 1.7; color: var(--g5); margin-bottom: 0.8rem; }
+.gd-term-def strong { color: var(--indigo); }
+.gd-term-analogy {
+  display: flex; gap: 0.5rem; background: var(--g1);
+  border-radius: var(--r); padding: 0.65rem 0.8rem; align-items: flex-start;
+}
+.gd-analogy-label {
+  font-family: var(--ff-mono); font-size: 0.55rem; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--orange); flex-shrink: 0; padding-top: 0.15rem;
+}
+.gd-analogy-text { font-size: 0.78rem; color: var(--g4); line-height: 1.55; font-style: italic; }
+
+body.gd-lock { overflow: hidden; }
+
+@media (max-width: 480px) {
+  .glossary-drawer { width: 100vw; }
+  .gd-pipe-sub { display: none; }
+}
 </style>
 </head>
 <body>
@@ -482,9 +620,100 @@ footer {
       <div class="brand-mark">DM</div>
       <span class="brand-name">Data Marts &amp; Semantic Layer</span>
     </div>
-    <div class="hdr-right" id="hdr-stats"><!-- filled by JS --></div>
+    <div class="hdr-right" id="hdr-stats"></div>
   </div>
 </header>
+
+<!-- ── GLOSSARY DRAWER ── -->
+<div class="glossary-overlay" id="glossary-overlay" aria-hidden="true"></div>
+<aside class="glossary-drawer" id="glossary-drawer" role="dialog" aria-modal="true" aria-label="Data Pipeline Glossary" aria-hidden="true" tabindex="-1">
+  <div class="gd-header">
+    <div class="gd-title-group">
+      <span class="gd-eyebrow">Reference</span>
+      <h2 class="gd-title">Data Pipeline Glossary</h2>
+    </div>
+    <button class="gd-close-btn" id="glossary-close-btn" aria-label="Close glossary">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="gd-body">
+
+    <!-- Glossary Cards -->
+    <section class="gd-glossary">
+      <h3 class="gd-section-label">Glossary</h3>
+
+      <div class="gd-term-card">
+        <div class="gd-term-head">
+          <span class="gd-term-chip chip c-muted">Pipeline Step</span>
+          <h4 class="gd-term-name">Model</h4>
+        </div>
+        <p class="gd-term-def">A structured table in the database that organizes your data for analysis. There are two types: <strong>Dimensions</strong> (which describe people, places, and things) and <strong>Facts</strong> (which record events and numbers). Together they form the foundation everything else is built on.</p>
+        <div class="gd-term-analogy">
+          <span class="gd-analogy-label">Example</span>
+          <span class="gd-analogy-text">A student profile table (Dimension) and an attendance log (Fact) are both models — one describes, the other records.</span>
+        </div>
+      </div>
+
+      <div class="gd-term-card">
+        <div class="gd-term-head">
+          <span class="gd-term-chip chip c-blue">Model</span>
+          <h4 class="gd-term-name">Dimension</h4>
+        </div>
+        <p class="gd-term-def">Nouns and adjectives. Dimensions don't record events — they describe the <strong>people, places, and things</strong> involved. For a student, it's everything about WHO they are: name, grade, school, demographic info.</p>
+        <div class="gd-term-analogy">
+          <span class="gd-analogy-label">Example</span>
+          <span class="gd-analogy-text">A student profile, a school directory, a course catalog, or a staff roster.</span>
+        </div>
+      </div>
+
+      <div class="gd-term-card">
+        <div class="gd-term-head">
+          <span class="gd-term-chip chip c-blue">Model</span>
+          <h4 class="gd-term-name">Fact Table</h4>
+        </div>
+        <p class="gd-term-def">Events and dates. This student, on this date, earned this score or was present/absent. The <strong>numbers live here</strong> — every measurable event recorded as a row.</p>
+        <div class="gd-term-analogy">
+          <span class="gd-analogy-label">Example</span>
+          <span class="gd-analogy-text">An attendance log, a gradebook, a test score record, or a financial transaction ledger.</span>
+        </div>
+      </div>
+
+      <div class="gd-term-card">
+        <div class="gd-term-head">
+          <span class="gd-term-chip chip c-orange">Semantic Layer</span>
+          <h4 class="gd-term-name">Cube</h4>
+        </div>
+        <p class="gd-term-def">Where we <strong>join both types of models</strong> to give facts more context. A Cube is a pre-assembled, validated view — ready to analyze without needing to know the underlying table structure.</p>
+        <div class="gd-term-analogy">
+          <span class="gd-analogy-label">Example</span>
+          <span class="gd-analogy-text">An Attendance Cube joins the attendance log (Fact) to the student, school, and calendar tables (Dimensions) so you can ask "What was 9th grade chronic absenteeism at this school in Q2?"</span>
+        </div>
+      </div>
+
+      <div class="gd-term-card">
+        <div class="gd-term-head">
+          <span class="gd-term-chip chip c-orange">Semantic Layer</span>
+          <h4 class="gd-term-name">Metric</h4>
+        </div>
+        <p class="gd-term-def">A single, officially defined number with a <strong>shared formula</strong> so every school and department is measuring the same thing the same way. Since facts are joined to dimensions in the semantic layer, metrics can be sliced and aggregated by any category.</p>
+        <div class="gd-term-analogy">
+          <span class="gd-analogy-label">Example</span>
+          <span class="gd-analogy-text">Average Daily Attendance = [Students Present] / [Total Students] — sliceable by school, grade, homeroom, IEP status, and more.</span>
+        </div>
+      </div>
+
+      <div class="gd-term-card gd-term-card--highlight">
+        <div class="gd-term-head">
+          <span class="gd-term-chip chip c-green">Status</span>
+          <h4 class="gd-term-name">BI-Ready</h4>
+        </div>
+        <p class="gd-term-def" style="margin-bottom:0">Metric calculations <strong>fully defined and validated</strong>. They are ready to incorporate into Business Intelligence (BI) tools like dashboards, apps, and LLMs/AI Agents.</p>
+      </div>
+
+    </section>
+  </div>
+</aside>
+<!-- ── END GLOSSARY DRAWER ── -->
 
 <!-- ── HERO ── -->
 <section class="hero">
@@ -506,6 +735,47 @@ footer {
     </div>
   </div>
 </section>
+
+<!-- ── PIPELINE BAR ── -->
+<div class="pipeline-bar">
+  <div class="pipeline-bar-inner">
+    <div class="gd-pipeline-track">
+      <div class="gd-pipe-step ps-source">
+        <div class="gd-pipe-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+        <span class="gd-pipe-label">Tableau Dashboards</span>
+        <span class="gd-pipe-sub">Where the data lives today</span>
+      </div>
+      <div class="gd-pipe-arrow" aria-hidden="true"><svg width="20" height="12" viewBox="0 0 20 12"><path d="M0 6h17M13 1l6 5-6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+      <div class="gd-pipe-step ps-schema">
+        <div class="gd-pipe-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="4" cy="6" r="2"/><circle cx="20" cy="6" r="2"/><circle cx="4" cy="18" r="2"/><circle cx="20" cy="18" r="2"/><line x1="12" y1="9" x2="4" y2="7"/><line x1="12" y1="9" x2="20" y2="7"/><line x1="12" y1="15" x2="4" y2="17"/><line x1="12" y1="15" x2="20" y2="17"/></svg></div>
+        <span class="gd-pipe-label">Models</span>
+        <span class="gd-pipe-sub">Dimensions &amp; Facts</span>
+      </div>
+      <div class="gd-pipe-arrow" aria-hidden="true"><svg width="20" height="12" viewBox="0 0 20 12"><path d="M0 6h17M13 1l6 5-6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+      <div class="gd-pipe-step ps-cube">
+        <div class="gd-pipe-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M12 3L3 8.5v7L12 21l9-5.5v-7L12 3z"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="8.5" x2="21" y2="8.5"/></svg></div>
+        <span class="gd-pipe-label">Semantic Layer</span>
+        <span class="gd-pipe-sub">Cubes — joined &amp; validated</span>
+      </div>
+      <div class="gd-pipe-arrow" aria-hidden="true"><svg width="20" height="12" viewBox="0 0 20 12"><path d="M0 6h17M13 1l6 5-6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+      <div class="gd-pipe-step ps-metric">
+        <div class="gd-pipe-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polyline points="3 17 9 11 13 15 21 7"/><line x1="21" y1="7" x2="21" y2="12"/><line x1="21" y1="7" x2="16" y2="7"/></svg></div>
+        <span class="gd-pipe-label">Metrics</span>
+        <span class="gd-pipe-sub">Specific, reportable numbers</span>
+      </div>
+      <div class="gd-pipe-arrow" aria-hidden="true"><svg width="20" height="12" viewBox="0 0 20 12"><path d="M0 6h17M13 1l6 5-6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+      <div class="gd-pipe-step ps-bi">
+        <div class="gd-pipe-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+        <span class="gd-pipe-label">BI Tool</span>
+        <span class="gd-pipe-sub">Live &amp; validated</span>
+      </div>
+    </div>
+    <button class="glossary-btn" id="glossary-open-btn" aria-haspopup="dialog" aria-label="Open glossary">
+      <svg width="13" height="13" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.75"/><path d="M10 9v6M10 6.5v.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Glossary
+    </button>
+  </div>
+</div>
 
 <!-- ── STATUS STRIP ── -->
 <div class="sec-status">
@@ -534,7 +804,7 @@ footer {
         <div class="fchip-group" id="filter-chips">
           <button class="fchip fc-active" data-status="all">All</button>
           <button class="fchip fc-blocked" data-status="blocked">&#9650; Blocked</button>
-          <button class="fchip fc-ready" data-status="ready">Ready</button>
+          <button class="fchip fc-ready" data-status="ready">Pending</button>
           <button class="fchip fc-done" data-status="done">Done</button>
         </div>
         <span class="filter-count" id="filter-count"></span>
@@ -643,7 +913,7 @@ document.getElementById('status-inner').innerHTML = `
   <div class="status-divider"></div>
   <div class="status-block">
     <span class="status-num sn-ready">${metricsReadyCube}</span>
-    <span class="status-lbl">Ready for Cube</span>
+    <span class="status-lbl">Pending for Cube</span>
   </div>
   <div class="status-divider"></div>
   <div class="status-block">
@@ -703,15 +973,15 @@ function renderPcol(id, typeLabel, typeClass, color, items, getAside, subtitle, 
 
 renderPcol('pcol-dims', 'Dimensions', 'pt-dim', '#57C0E9', dims, null);
 renderPcol('pcol-fcts', 'Facts',      'pt-fct', '#F9A21A', fcts, null);
-renderPcol('pcol-cubes', 'Tableau Dashboards', 'pt-cube', '#b45309', cubes, d => {
+renderPcol('pcol-cubes', 'Cubes', 'pt-cube', '#b45309', cubes, d => {
   return d.sub_total > 0
     ? `<span class="il-meta">${d.sub_done}/${d.sub_total}</span>` : '';
-}, 'click to filter below', d => {
+}, '(by dashboard) click to filter below', d => {
   if (d.status === 'complete') return `<span class="il-badge ilb-done">done</span>`;
   const deps = cubeDeps[d.id] || [];
   return deps.some(dep => dep.status !== 'complete')
     ? `<span class="il-badge ilb-blocked">blocked</span>`
-    : `<span class="il-badge ilb-ready">ready</span>`;
+    : `<span class="il-badge ilb-ready">pending</span>`;
 });
 
 // ── Cube detail cards ──────────────────────────────────────────────────────
@@ -734,7 +1004,7 @@ const cubeCardsHtml = cubes.map(c => {
   } else {
     stateKey   = 'ready';
     cardCls    = 'cube-card cc-ready';
-    statusHtml = '<span class="chip c-gold">ready</span>';
+    statusHtml = '<span class="chip c-gold">pending</span>';
   }
   const safeId = d.id.replace(/"/g, '&quot;');
 
@@ -886,6 +1156,49 @@ const revObs = new IntersectionObserver(entries => {
   entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('on'); });
 }, { threshold: 0.05 });
 document.querySelectorAll('.rev').forEach(el => revObs.observe(el));
+
+// ── Glossary Drawer ──────────────────────────────────────────────────────────
+(function () {
+  const drawer  = document.getElementById('glossary-drawer');
+  const overlay = document.getElementById('glossary-overlay');
+  const openBtn = document.getElementById('glossary-open-btn');
+  const closeBtn= document.getElementById('glossary-close-btn');
+
+  function getFocusable() {
+    return Array.from(drawer.querySelectorAll('a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+  }
+  function openDrawer() {
+    drawer.removeAttribute('aria-hidden');
+    overlay.removeAttribute('aria-hidden');
+    drawer.classList.add('gd-open');
+    overlay.classList.add('gd-visible');
+    document.body.classList.add('gd-lock');
+    openBtn.setAttribute('aria-expanded', 'true');
+    closeBtn.focus();
+  }
+  function closeDrawer() {
+    drawer.setAttribute('aria-hidden', 'true');
+    overlay.setAttribute('aria-hidden', 'true');
+    drawer.classList.remove('gd-open');
+    overlay.classList.remove('gd-visible');
+    document.body.classList.remove('gd-lock');
+    openBtn.setAttribute('aria-expanded', 'false');
+    openBtn.focus();
+  }
+  drawer.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { closeDrawer(); return; }
+    if (e.key !== 'Tab') return;
+    const focusable = getFocusable();
+    if (!focusable.length) return;
+    const first = focusable[0], last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
+  openBtn.addEventListener('click', openDrawer);
+  closeBtn.addEventListener('click', closeDrawer);
+  overlay.addEventListener('click', closeDrawer);
+  openBtn.setAttribute('aria-expanded', 'false');
+})();
 </script>
 </body>
 </html>
