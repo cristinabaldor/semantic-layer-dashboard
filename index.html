@@ -293,6 +293,7 @@ header {
 .ilb-done    { color: #166534; border-color: rgba(34,197,94,0.4);  background: rgba(34,197,94,0.08);  }
 .ilb-pending { color: var(--g4); border-color: var(--g2);          background: transparent;           }
 .ilb-blocked { color: #991b1b; border-color: rgba(239,68,68,0.4);  background: rgba(239,68,68,0.07);  }
+.ilb-ready   { color: #92400e; border-color: rgba(249,162,26,0.45); background: rgba(249,162,26,0.09); }
 .il-meta {
   font-family: var(--ff-mono); font-size: 0.55rem; color: var(--g3);
 }
@@ -672,19 +673,21 @@ document.getElementById('summary-cards').innerHTML = `
 `;
 
 // ── Progress columns ───────────────────────────────────────────────────────
-function renderPcol(id, typeLabel, typeClass, color, items, getAside, subtitle) {
+function renderPcol(id, typeLabel, typeClass, color, items, getAside, subtitle, getBadge) {
   const done  = items.filter(n => n.data.status === 'complete').length;
   const total = items.length;
   const rows  = items.map(n => {
-    const d    = n.data;
-    const ok   = d.status === 'complete';
+    const d     = n.data;
+    const ok    = d.status === 'complete';
     const aside = getAside ? getAside(d) : '';
+    const badge = getBadge ? getBadge(d)
+      : `<span class="il-badge ${ok ? 'ilb-done' : 'ilb-pending'}">${ok ? 'done' : 'pending'}</span>`;
     return `<li class="il-row ${ok ? '' : 'is-pending'}">
       <span class="il-dot ${ok ? 'il-dot-done' : 'il-dot-pending'}"></span>
       <span class="il-name" title="${d.id}">${stripCube(d.id)}</span>
       <span class="il-aside">
         ${aside}
-        <span class="il-badge ${ok ? 'ilb-done' : 'ilb-pending'}">${ok ? 'done' : 'pending'}</span>
+        ${badge}
       </span>
     </li>`;
   }).join('');
@@ -703,7 +706,13 @@ renderPcol('pcol-fcts', 'Facts',      'pt-fct', '#F9A21A', fcts, null);
 renderPcol('pcol-cubes', 'Tableau Dashboards', 'pt-cube', '#b45309', cubes, d => {
   return d.sub_total > 0
     ? `<span class="il-meta">${d.sub_done}/${d.sub_total}</span>` : '';
-}, 'click to filter below');
+}, 'click to filter below', d => {
+  if (d.status === 'complete') return `<span class="il-badge ilb-done">done</span>`;
+  const deps = cubeDeps[d.id] || [];
+  return deps.some(dep => dep.status !== 'complete')
+    ? `<span class="il-badge ilb-blocked">blocked</span>`
+    : `<span class="il-badge ilb-ready">ready</span>`;
+});
 
 // ── Cube detail cards ──────────────────────────────────────────────────────
 const cubeCardsHtml = cubes.map(c => {
