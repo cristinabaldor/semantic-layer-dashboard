@@ -183,38 +183,6 @@ header {
 .scard-track { height: 4px; background: var(--g2); border-radius: 2px; overflow: hidden; }
 .scard-fill  { height: 100%; border-radius: 2px; }
 
-/* ── Status strip (dark indigo) ── */
-.sec-status {
-  background: var(--indigo);
-  padding: 0.85rem 2rem;
-  border-bottom: 3px solid rgba(255,255,255,0.06);
-}
-.status-inner {
-  max-width: var(--mw); margin: 0 auto;
-  display: flex; flex-direction: column; gap: 0.5rem;
-}
-.status-eyebrow {
-  font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 700;
-  letter-spacing: 0.14em; text-transform: uppercase;
-  color: rgba(255,255,255,0.45);
-}
-.status-stats {
-  display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;
-}
-.status-divider { width: 1px; height: 28px; background: rgba(255,255,255,0.12); flex-shrink: 0; }
-.status-block { display: flex; flex-direction: column; gap: 0.15rem; }
-.status-num {
-  font-family: var(--ff-head); font-size: 1.6rem; font-weight: 800;
-  line-height: 1;
-}
-.sn-blocked { color: var(--g3); }
-.sn-ready   { color: var(--orange); }
-.sn-bi      { color: var(--white); }
-.status-lbl {
-  font-family: var(--ff-mono); font-size: 0.75rem; font-weight: 600;
-  letter-spacing: 0.05em; text-transform: uppercase;
-  color: rgba(255,255,255,0.65);
-}
 
 /* ── Section wrapper ── */
 .sec-wrap { max-width: var(--mw); margin: 0 auto; }
@@ -553,9 +521,17 @@ footer {
 }
 .pipeline-bar-inner {
   max-width: var(--mw); margin: 0 auto;
-  padding: 1.4rem 2rem;
-  display: flex; align-items: center; gap: 2rem;
+  padding: 1.25rem 2rem 1.4rem;
+  display: flex; flex-direction: column; gap: 1rem;
 }
+.pipeline-bar-top {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.pipeline-bar-eyebrow {
+  font-family: var(--ff-mono); font-size: 0.58rem; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--g3);
+}
+.pipeline-bar-content { display: flex; flex-direction: column; gap: 0.75rem; }
 
 /* ── Pipeline Diagram ── */
 .gd-pipeline-track {
@@ -571,6 +547,25 @@ footer {
 }
 .gd-pipe-label { font-family: var(--ff-mono); font-size: 0.64rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; line-height: 1.25; word-break: break-word; }
 .gd-pipe-sub { font-family: var(--ff-body); font-size: 0.7rem; color: var(--g4); line-height: 1.35; }
+/* Stats row */
+.gd-pipeline-stats {
+  display: flex; align-items: center; width: 100%;
+  border-top: 1px solid var(--g2); padding-top: 0.6rem;
+}
+.gd-pipe-stat {
+  flex: 1 1 0; min-width: 0; text-align: center;
+  font-family: var(--ff-mono); font-size: 0.65rem; font-weight: 700;
+  line-height: 1.3; padding: 0.3rem 0.25rem; border-radius: var(--r);
+}
+.gd-stat-spacer { flex-shrink: 0; width: 40px; }
+.gd-pipe-stat.ps-source { color: var(--indigo);  background: rgba(0,30,98,0.07); }
+.gd-pipe-stat.ps-schema { color: #0c6b96;         background: rgba(87,192,233,0.12); }
+.gd-pipe-stat.ps-cube   { color: #5b21b6;         background: rgba(139,92,246,0.12); }
+.gd-pipe-stat.ps-metric { display: flex; gap: 0.25rem; justify-content: center; background: none; padding: 0; }
+.pipe-stat-chip { font-family: var(--ff-mono); font-size: 0.62rem; font-weight: 700; padding: 0.25rem 0.4rem; border-radius: var(--r); line-height: 1.3; }
+.psc-pending { color: #d97706; background: rgba(249,162,26,0.18); }
+.psc-blocked { color: #991b1b; background: rgba(239,68,68,0.10); }
+.gd-pipe-stat.ps-bi     { color: #166534;         background: rgba(34,197,94,0.12); }
 /* Arrow: margin-top centers it with the 52px icon — (52 - 12) / 2 = 20px */
 .gd-pipe-arrow { flex-shrink: 0; color: var(--g3); padding: 0 0.1rem; margin-top: 20px; }
 
@@ -611,21 +606,9 @@ footer {
 body.gd-lock { overflow: hidden; }
 
 @media (max-width: 640px) {
-  /* Pipeline bar: stack button below pipeline */
-  .pipeline-bar-inner {
-    flex-wrap: wrap;
-    padding: 1rem 1rem 0.85rem;
-    gap: 0.85rem;
-  }
-  .gd-pipeline-track { width: 100%; }
-  .glossary-btn { width: 100%; justify-content: center; }
+  /* Pipeline bar: tighten padding */
+  .pipeline-bar-inner { padding: 1rem; }
 
-  /* Status strip: tighten up */
-  .sec-status { padding: 0.75rem 1rem; }
-  .status-stats { gap: 1.25rem; }
-  .status-num { font-size: 1.2rem; }
-  .status-lbl { font-size: 0.6rem; }
-  .status-divider { height: 22px; }
 }
 
 @media (max-width: 480px) {
@@ -764,48 +747,60 @@ body.gd-lock { overflow: hidden; }
 <!-- ── PIPELINE BAR ── -->
 <div class="pipeline-bar">
   <div class="pipeline-bar-inner">
-    <div class="gd-pipeline-track">
-      <div class="gd-pipe-step ps-source">
-        <div class="gd-pipe-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
-        <span class="gd-pipe-label">Tableau Dashboards</span>
-        <span class="gd-pipe-sub">Where the data lives today</span>
+    <div class="pipeline-bar-top">
+      <span class="pipeline-bar-eyebrow">Data Pipeline</span>
+      <button class="glossary-btn" id="glossary-open-btn" aria-haspopup="dialog" aria-label="Open glossary">
+        <svg width="13" height="13" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.75"/><path d="M10 9v6M10 6.5v.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Glossary
+      </button>
+    </div>
+    <div class="pipeline-bar-content">
+      <div class="gd-pipeline-track">
+        <div class="gd-pipe-step ps-source">
+          <div class="gd-pipe-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+          <span class="gd-pipe-label">Tableau Dashboards</span>
+          <span class="gd-pipe-sub">Where the data lives today</span>
+        </div>
+        <div class="gd-pipe-arrow" aria-hidden="true"><svg width="20" height="12" viewBox="0 0 20 12"><path d="M0 6h17M13 1l6 5-6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+        <div class="gd-pipe-step ps-schema">
+          <div class="gd-pipe-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="4" cy="6" r="2"/><circle cx="20" cy="6" r="2"/><circle cx="4" cy="18" r="2"/><circle cx="20" cy="18" r="2"/><line x1="12" y1="9" x2="4" y2="7"/><line x1="12" y1="9" x2="20" y2="7"/><line x1="12" y1="15" x2="4" y2="17"/><line x1="12" y1="15" x2="20" y2="17"/></svg></div>
+          <span class="gd-pipe-label">Models</span>
+          <span class="gd-pipe-sub">Dimensions &amp; Facts</span>
+        </div>
+        <div class="gd-pipe-arrow" aria-hidden="true"><svg width="20" height="12" viewBox="0 0 20 12"><path d="M0 6h17M13 1l6 5-6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+        <div class="gd-pipe-step ps-cube">
+          <div class="gd-pipe-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M12 3L3 8.5v7L12 21l9-5.5v-7L12 3z"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="8.5" x2="21" y2="8.5"/></svg></div>
+          <span class="gd-pipe-label">Semantic Layer</span>
+          <span class="gd-pipe-sub">Cubes — joined &amp; validated</span>
+        </div>
+        <div class="gd-pipe-arrow" aria-hidden="true"><svg width="20" height="12" viewBox="0 0 20 12"><path d="M0 6h17M13 1l6 5-6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+        <div class="gd-pipe-step ps-metric">
+          <div class="gd-pipe-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polyline points="3 17 9 11 13 15 21 7"/><line x1="21" y1="7" x2="21" y2="12"/><line x1="21" y1="7" x2="16" y2="7"/></svg></div>
+          <span class="gd-pipe-label">Metrics</span>
+          <span class="gd-pipe-sub">Specific, reportable numbers</span>
+        </div>
+        <div class="gd-pipe-arrow" aria-hidden="true"><svg width="20" height="12" viewBox="0 0 20 12"><path d="M0 6h17M13 1l6 5-6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+        <div class="gd-pipe-step ps-bi">
+          <div class="gd-pipe-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+          <span class="gd-pipe-label">BI Tool</span>
+          <span class="gd-pipe-sub">Live &amp; validated</span>
+        </div>
       </div>
-      <div class="gd-pipe-arrow" aria-hidden="true"><svg width="20" height="12" viewBox="0 0 20 12"><path d="M0 6h17M13 1l6 5-6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
-      <div class="gd-pipe-step ps-schema">
-        <div class="gd-pipe-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="4" cy="6" r="2"/><circle cx="20" cy="6" r="2"/><circle cx="4" cy="18" r="2"/><circle cx="20" cy="18" r="2"/><line x1="12" y1="9" x2="4" y2="7"/><line x1="12" y1="9" x2="20" y2="7"/><line x1="12" y1="15" x2="4" y2="17"/><line x1="12" y1="15" x2="20" y2="17"/></svg></div>
-        <span class="gd-pipe-label">Models</span>
-        <span class="gd-pipe-sub">Dimensions &amp; Facts</span>
-      </div>
-      <div class="gd-pipe-arrow" aria-hidden="true"><svg width="20" height="12" viewBox="0 0 20 12"><path d="M0 6h17M13 1l6 5-6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
-      <div class="gd-pipe-step ps-cube">
-        <div class="gd-pipe-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M12 3L3 8.5v7L12 21l9-5.5v-7L12 3z"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="8.5" x2="21" y2="8.5"/></svg></div>
-        <span class="gd-pipe-label">Semantic Layer</span>
-        <span class="gd-pipe-sub">Cubes — joined &amp; validated</span>
-      </div>
-      <div class="gd-pipe-arrow" aria-hidden="true"><svg width="20" height="12" viewBox="0 0 20 12"><path d="M0 6h17M13 1l6 5-6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
-      <div class="gd-pipe-step ps-metric">
-        <div class="gd-pipe-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polyline points="3 17 9 11 13 15 21 7"/><line x1="21" y1="7" x2="21" y2="12"/><line x1="21" y1="7" x2="16" y2="7"/></svg></div>
-        <span class="gd-pipe-label">Metrics</span>
-        <span class="gd-pipe-sub">Specific, reportable numbers</span>
-      </div>
-      <div class="gd-pipe-arrow" aria-hidden="true"><svg width="20" height="12" viewBox="0 0 20 12"><path d="M0 6h17M13 1l6 5-6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
-      <div class="gd-pipe-step ps-bi">
-        <div class="gd-pipe-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
-        <span class="gd-pipe-label">BI Tool</span>
-        <span class="gd-pipe-sub">Live &amp; validated</span>
+      <div class="gd-pipeline-stats">
+        <span class="gd-pipe-stat ps-source" id="pipe-stat-source"></span>
+        <div class="gd-stat-spacer"></div>
+        <span class="gd-pipe-stat ps-schema" id="pipe-stat-schema"></span>
+        <div class="gd-stat-spacer"></div>
+        <span class="gd-pipe-stat ps-cube" id="pipe-stat-cube"></span>
+        <div class="gd-stat-spacer"></div>
+        <span class="gd-pipe-stat ps-metric" id="pipe-stat-metric"></span>
+        <div class="gd-stat-spacer"></div>
+        <span class="gd-pipe-stat ps-bi" id="pipe-stat-bi"></span>
       </div>
     </div>
-    <button class="glossary-btn" id="glossary-open-btn" aria-haspopup="dialog" aria-label="Open glossary">
-      <svg width="13" height="13" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.75"/><path d="M10 9v6M10 6.5v.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Glossary
-    </button>
   </div>
 </div>
 
-<!-- ── STATUS STRIP ── -->
-<div class="sec-status">
-  <div class="status-inner" id="status-inner"><!-- filled by JS --></div>
-</div>
 
 <!-- ── PROGRESS COLUMNS ── -->
 <div class="sec-progress">
@@ -928,29 +923,19 @@ cubes.forEach(c => {
   else           { metricsReadyCube += pending; }
 });
 
-document.getElementById('status-inner').innerHTML = `
-  <span class="status-eyebrow">Metrics Progress</span>
-  <div class="status-stats">
-    <div class="status-block">
-      <span class="status-num sn-blocked">${metricsBlocked}</span>
-      <span class="status-lbl">Blocked</span>
-    </div>
-    <div class="status-divider"></div>
-    <div class="status-block">
-      <span class="status-num sn-ready">${metricsReadyCube}</span>
-      <span class="status-lbl">Pending for Cube</span>
-    </div>
-    <div class="status-divider"></div>
-    <div class="status-block">
-      <span class="status-num sn-bi">${readyBICount}</span>
-      <span class="status-lbl">Ready for BI</span>
-    </div>
-  </div>
-`;
 
 // ── Summary cards (hero right) ─────────────────────────────────────────────
 const modelsDone  = STATS.dims_done + STATS.fcts_done;
 const modelsTotal = STATS.dims_total + STATS.fcts_total;
+
+// ── Pipeline bar stats ──────────────────────────────────────────────────────
+document.getElementById('pipe-stat-source').textContent = `${STATS.cubes_total} dashboards`;
+document.getElementById('pipe-stat-schema').textContent = `${modelsDone}/${modelsTotal} done`;
+document.getElementById('pipe-stat-cube').textContent   = `${STATS.cubes_done}/${STATS.cubes_total} done`;
+document.getElementById('pipe-stat-metric').innerHTML =
+  `<span class="pipe-stat-chip psc-pending">${metricsReadyCube} pending</span>` +
+  `<span class="pipe-stat-chip psc-blocked">${metricsBlocked} blocked</span>`;
+document.getElementById('pipe-stat-bi').textContent     = `${readyBICount}/${totalMetrics} ready`;
 const modelsPct   = pct(modelsDone, modelsTotal);
 const metricsPct  = pct(readyBICount, totalMetrics);
 document.getElementById('summary-cards').innerHTML = `
