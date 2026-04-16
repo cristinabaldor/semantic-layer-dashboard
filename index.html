@@ -270,8 +270,8 @@ header {
   font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
   letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.45rem;
 }
-.pt-model   { color: #92400e; }
-.pt-measure { color: #5b21b6; }
+.pt-model   { color: #5b21b6; }
+.pt-measure { color: #166534; }
 .pt-view    { color: #0c6b96; }
 .pcol-score {
   font-family: var(--ff-head); font-size: 1.9rem; font-weight: 800;
@@ -337,9 +337,9 @@ header {
   border-bottom: 1px solid var(--g2);
 }
 .cube-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 1.75rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 1rem;
 }
 .domain-group-header {
   font-family: var(--ff-mono); font-size: 0.62rem; font-weight: 700;
@@ -469,6 +469,7 @@ header {
   cursor: pointer; transition: all 0.12s;
 }
 .filter-clear-btn:hover { background: var(--g2); color: var(--g5); }
+.fchip.fc-topline.fc-active { background: #92400e; border-color: #92400e; color: var(--white); }
 .il-row-click { cursor: pointer; }
 .il-row-click:hover { background: rgba(87,192,233,0.07); }
 .il-row-click.il-selected {
@@ -578,35 +579,35 @@ body.gd-lock { overflow: hidden; }
     </button>
   </div>
   <div class="gd-body">
-    <div class="gd-term-card" style="border-left-color:#57C0E9">
+    <div class="gd-term-card" style="border-left-color:#F9A21A">
       <div class="gd-term-name">Model</div>
       <span class="gd-term-tag">dbt &middot; SQL transformation</span>
       <p class="gd-term-desc">A dbt model is a SELECT statement saved as a <code>.sql</code> file. Models transform raw source data into clean, business-ready tables — dims, facts, and bridges — that power downstream metrics and dashboards.</p>
     </div>
-    <div class="gd-term-card" style="border-left-color:#57C0E9">
+    <div class="gd-term-card" style="border-left-color:#F9A21A">
       <div class="gd-term-name">Dimension</div>
       <span class="gd-term-tag">dim_* &middot; descriptive attributes</span>
       <p class="gd-term-desc">Dimension models describe the &ldquo;who, what, where&rdquo; of your data — people, places, courses, and dates. They&rsquo;re the reference tables that fact models join to for context and filtering.</p>
     </div>
-    <div class="gd-term-card" style="border-left-color:#57C0E9">
+    <div class="gd-term-card" style="border-left-color:#F9A21A">
       <div class="gd-term-name">Fact Table</div>
       <span class="gd-term-tag">fct_* &middot; events and transactions</span>
       <p class="gd-term-desc">Fact models capture the &ldquo;what happened&rdquo; — attendance events, assessment scores, staff observations. Each row is a measurable event, joined to dimensions for context.</p>
     </div>
-    <div class="gd-term-card" style="border-left-color:#F9A21A">
+    <div class="gd-term-card" style="border-left-color:#8b5cf6">
       <div class="gd-term-name">Semantic Layer</div>
-      <span class="gd-term-tag">Cube &middot; MetricFlow</span>
+      <span class="gd-term-tag">Cube</span>
       <p class="gd-term-desc">The semantic layer sits between the data warehouse and BI tools. It defines business logic — joins, filters, and metric formulas — in one place so every tool sees consistent numbers.</p>
     </div>
-    <div class="gd-term-card" style="border-left-color:#F9A21A">
-      <div class="gd-term-name">Metric / Measure</div>
+    <div class="gd-term-card" style="border-left-color:#22c55e">
+      <div class="gd-term-name">Metric</div>
       <span class="gd-term-tag">measure &middot; computed value</span>
       <p class="gd-term-desc">A metric is a computed value defined in the semantic layer: attendance rate, assessment proficiency %, staff retention. <strong>Topline</strong> metrics are the headline numbers tracked at the org level.</p>
     </div>
-    <div class="gd-term-card" style="border-left-color:#22c55e">
-      <div class="gd-term-name">BI-Ready View</div>
-      <span class="gd-term-tag">view &middot; published dashboard</span>
-      <p class="gd-term-desc">A view is a fully-defined Cube perspective or Looker Explore that BI users can query directly. It&rsquo;s the final output — blocked until all upstream models and measures in its domain are complete.</p>
+    <div class="gd-term-card" style="border-left-color:#57C0E9">
+      <div class="gd-term-name">Views</div>
+      <span class="gd-term-tag">business intelligence &middot; dashboards &middot; LLMs &middot; apps</span>
+      <p class="gd-term-desc">A view is a fully-defined set of dimensions, facts, and metrics that users can query directly. It&rsquo;s the final output — blocked until all upstream models and measures in its domain are complete.</p>
     </div>
   </div>
 </aside>
@@ -667,7 +668,7 @@ body.gd-lock { overflow: hidden; }
           </svg>
         </div>
         <div class="gd-pipe-label">Tableau</div>
-        <div class="gd-pipe-sub">Source Views</div>
+        <div class="gd-pipe-sub">Dashboards</div>
         <div class="gd-pipe-stat" id="pipe-stat-source"></div>
       </div>
       <div class="gd-pipe-arrow">
@@ -699,7 +700,7 @@ body.gd-lock { overflow: hidden; }
           </svg>
         </div>
         <div class="gd-pipe-label">Semantic Layer</div>
-        <div class="gd-pipe-sub">Cube / MetricFlow</div>
+        <div class="gd-pipe-sub">Cube</div>
         <div class="gd-pipe-stat" id="pipe-stat-cube"></div>
       </div>
       <div class="gd-pipe-arrow">
@@ -731,8 +732,8 @@ body.gd-lock { overflow: hidden; }
             <path d="M6 11V9M9 11V7M12 11V8M15 11V6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
           </svg>
         </div>
-        <div class="gd-pipe-label">BI Tool</div>
-        <div class="gd-pipe-sub">Dashboards</div>
+        <div class="gd-pipe-label">Next Gen Tools</div>
+        <div class="gd-pipe-sub">LLMs, Apps, Dashboards, Self-Service</div>
         <div class="gd-pipe-stat" id="pipe-stat-bi"></div>
       </div>
     </div>
@@ -742,7 +743,7 @@ body.gd-lock { overflow: hidden; }
 <!-- ── PROGRESS COLUMNS ── -->
 <div class="sec-progress">
   <div class="sec-wrap">
-    <div class="sec-label rev">Model &amp; Metric Progress</div>
+    <div class="sec-label rev">Cube &amp; Metric Progress</div>
     <div class="progress-grid rev d1">
       <div class="pcol" id="pcol-models"><!-- filled by JS --></div>
       <div class="pcol" id="pcol-measures"><!-- filled by JS --></div>
@@ -755,15 +756,16 @@ body.gd-lock { overflow: hidden; }
 <div class="sec-cubes">
   <div class="sec-wrap">
     <div class="cube-toolbar rev">
-      <div class="sec-label" style="margin-bottom:0">Views</div>
+      <div class="sec-label" style="margin-bottom:0">Measures by Domain</div>
       <div class="filter-bar">
-        <input type="text" id="cube-search" class="search-input" placeholder="Search views&#8230;"/>
+        <input type="text" id="cube-search" class="search-input" placeholder="Search domains or measures&#8230;"/>
         <div class="fchip-group" id="filter-chips">
           <button class="fchip fc-active" data-status="all">All</button>
           <button class="fchip fc-blocked" data-status="blocked">&#9650; Blocked</button>
           <button class="fchip fc-ready" data-status="ready">Ready</button>
           <button class="fchip fc-done" data-status="done">Done</button>
         </div>
+        <button class="fchip fc-topline" id="topline-toggle">&#9733; Topline</button>
         <span class="filter-count" id="filter-count"></span>
         <button class="filter-clear-btn" id="filter-clear" style="display:none">Clear</button>
       </div>
@@ -810,11 +812,6 @@ function progBar(done, total, color) {
 }
 
 // ── Header stat chips ──────────────────────────────────────────────────────
-document.getElementById('hdr-stats').innerHTML = `
-  <span class="chip c-orange">Models ${pct(STATS.models_done, STATS.models_total)}%</span>
-  <span class="chip c-purple">Measures ${pct(STATS.measures_done, STATS.measures_total)}%</span>
-  <span class="chip c-muted">Topline ${pct(STATS.topline_done, STATS.topline_total)}%</span>
-`;
 
 // ── Summary cards ──────────────────────────────────────────────────────────
 const modelsPct   = pct(STATS.models_done,   STATS.models_total);
@@ -824,19 +821,19 @@ const toplinePct  = pct(STATS.topline_done,  STATS.topline_total);
 document.getElementById('summary-cards').innerHTML = `
   <div class="summary-card">
     <div class="sc-pct">${modelsPct}%</div>
-    <div class="sc-label">Models</div>
+    <div class="sc-label">Cubes</div>
     <div class="sc-sub">${STATS.models_done}/${STATS.models_total} complete</div>
     <div class="sc-track"><div class="sc-fill" style="width:${modelsPct}%;background:#F9A21A"></div></div>
   </div>
   <div class="summary-card">
     <div class="sc-pct">${measuresPct}%</div>
-    <div class="sc-label">Measures</div>
+    <div class="sc-label">All Metrics</div>
     <div class="sc-sub">${STATS.measures_done}/${STATS.measures_total} complete</div>
     <div class="sc-track"><div class="sc-fill" style="width:${measuresPct}%;background:#8b5cf6"></div></div>
   </div>
   <div class="summary-card">
     <div class="sc-pct">${toplinePct}%</div>
-    <div class="sc-label">Topline</div>
+    <div class="sc-label">Topline Metrics</div>
     <div class="sc-sub">${STATS.topline_done}/${STATS.topline_total} complete</div>
     <div class="sc-track"><div class="sc-fill" style="width:${toplinePct}%;background:#8b5cf6"></div></div>
   </div>
@@ -847,24 +844,21 @@ const measuresDoneCount    = measures.filter(n => n.data.status === 'complete').
 const measuresBlockedCount = measures.filter(n => n.data.status === 'blocked').length;
 const measuresPendingCount = measures.filter(n => n.data.status === 'ready').length;
 
-document.getElementById('pipe-stat-source').innerHTML =
-  `<span class="pipe-stat-chip psc-source">${STATS.views_total} dashboards</span>`;
+document.getElementById('pipe-stat-source').textContent = '';
 
-document.getElementById('pipe-stat-schema').innerHTML =
+document.getElementById('pipe-stat-schema').textContent = '';
+
+document.getElementById('pipe-stat-cube').innerHTML =
   STATS.models_done === STATS.models_total
     ? `<span class="pipe-stat-chip psc-done">${STATS.models_done}/${STATS.models_total} done</span>`
-    : `<span class="pipe-stat-chip psc-schema">${STATS.models_done}/${STATS.models_total} done</span>`;
+    : `<span class="pipe-stat-chip psc-cube">${STATS.models_done}/${STATS.models_total} done</span>`;
 
-document.getElementById('pipe-stat-cube').textContent =
-  `${measuresDoneCount}/${measures.length} done`;
+document.getElementById('pipe-stat-metric').innerHTML =
+  measuresDoneCount === measures.length
+    ? `<span class="pipe-stat-chip psc-done">${measuresDoneCount}/${measures.length} done</span>`
+    : `<span class="pipe-stat-chip psc-done">${measuresDoneCount}/${measures.length} done</span>`;
 
-document.getElementById('pipe-stat-metric').textContent =
-  `${measuresDoneCount}/${measures.length} done`;
-
-document.getElementById('pipe-stat-bi').innerHTML =
-  STATS.views_done === STATS.views_total
-    ? `<span class="pipe-stat-chip psc-done">${STATS.views_done}/${STATS.views_total} ready</span>`
-    : `<span class="pipe-stat-chip psc-bi">${STATS.views_done}/${STATS.views_total} ready</span>`;
+document.getElementById('pipe-stat-bi').textContent = '';
 
 // ── Progress column renderer (with domain grouping) ────────────────────────
 function renderPcol(id, typeLabel, typeClass, color, items, opts) {
@@ -935,9 +929,9 @@ function renderPcol(id, typeLabel, typeClass, color, items, opts) {
   `;
 }
 
-renderPcol('pcol-models', 'Models', 'pt-model', '#F9A21A', models, {});
+renderPcol('pcol-models', 'Cubes', 'pt-model', '#8b5cf6', models, {});
 
-renderPcol('pcol-measures', 'Measures', 'pt-measure', '#8b5cf6', measures, {
+renderPcol('pcol-measures', 'Metrics', 'pt-measure', '#22c55e', measures, {
   toplineFirst: true,
 });
 
@@ -950,138 +944,109 @@ renderPcol('pcol-views', 'Views', 'pt-view', '#57C0E9', views, {
   },
 });
 
-// ── View detail cards (grouped by domain) ─────────────────────────────────
-// Sort within each domain: done → ready → blocked, then alpha
-const sortedViews = [...views].sort((a, b) => {
-  const da = a.data.domain || 'Other', db = b.data.domain || 'Other';
-  if (da !== db) return da.localeCompare(db);
-  const order = {complete: 0, ready: 1, blocked: 2};
-  const ak = order[a.data.status] ?? 3, bk = order[b.data.status] ?? 3;
-  return ak !== bk ? ak - bk : a.data.id.localeCompare(b.data.id);
+// ── Domain measure cards ──────────────────────────────────────────────────
+// One card per domain; each lists all measures for that domain.
+
+// Group measures by domain, sorted alpha within each domain
+// (topline first, then done before pending, then alpha)
+const measuresByDomain = {};
+measures.forEach(n => {
+  const domain = n.data.domain || 'Other';
+  if (!measuresByDomain[domain]) measuresByDomain[domain] = [];
+  measuresByDomain[domain].push(n);
 });
 
-function buildViewCard(v) {
-  const d = v.data;
+const domainCardHtml = Object.keys(measuresByDomain).sort().map(domain => {
+  const domMeasures = [...measuresByDomain[domain]].sort((a, b) => {
+    const at = a.data.is_topline ? 0 : 1, bt = b.data.is_topline ? 0 : 1;
+    if (at !== bt) return at - bt;
+    const ak = a.data.status === 'complete' ? 0 : 1;
+    const bk = b.data.status === 'complete' ? 0 : 1;
+    return ak !== bk ? ak - bk : a.data.id.localeCompare(b.data.id);
+  });
 
-  let cardCls, statusHtml, stateKey;
-  if (d.status === 'complete') {
+  const done  = domMeasures.filter(n => n.data.status === 'complete').length;
+  const total = domMeasures.length;
+  const mp    = pct(done, total);
+
+  // Domain state: done if all complete, blocked if any blocked, else ready
+  let stateKey, cardCls, statusHtml;
+  if (done === total) {
     stateKey   = 'done';
     cardCls    = 'cube-card cc-done';
-    statusHtml = '<span class="chip c-green">&#10003; complete</span>';
-  } else if (d.status === 'blocked') {
+    statusHtml = `<span class="chip c-green">&#10003; ${done}/${total} done</span>`;
+  } else if (domMeasures.some(n => n.data.status === 'blocked')) {
     stateKey   = 'blocked';
-    const bc   = (d.blocking_measures || []).length;
     cardCls    = 'cube-card cc-blocked';
-    statusHtml = `<span class="chip c-red">&#9650; ${bc ? bc + ' pending' : 'blocked'}</span>`;
+    statusHtml = `<span class="chip c-red">${done}/${total} done</span>`;
   } else {
     stateKey   = 'ready';
     cardCls    = 'cube-card cc-ready';
-    statusHtml = '<span class="chip c-gold">ready</span>';
+    statusHtml = `<span class="chip c-gold">${done}/${total} done</span>`;
   }
 
-  let subtasksHtml = '';
-  if (d.sub_total > 0) {
-    const mp      = pct(d.sub_done, d.sub_total);
-    const subRows = d.subtasks.map(s => `
-      <li class="cc-sub-row ${s.done ? 'cc-sub-done' : 'cc-sub-pending'}">
-        <span class="cc-sub-dot"></span>
-        <span class="cc-sub-name">${s.name}</span>
-      </li>`).join('');
-    subtasksHtml = `
-      <div class="cc-metrics">
-        <div class="cc-metrics-header">
-          <span class="cc-metrics-label">Metrics</span>
-          <span class="cc-metrics-count">${d.sub_done}/${d.sub_total} (${mp}%)</span>
-        </div>
-        <div class="cc-track"><div class="cc-fill" style="width:${mp}%;background:#b45309"></div></div>
-        <ul class="cc-sub-list">${subRows}</ul>
-      </div>`;
-  }
+  const rows = domMeasures.map(n => {
+    const d  = n.data;
+    const ok = d.status === 'complete';
+    const cls  = ok ? 'ilb-done' : (d.status === 'blocked' ? 'ilb-blocked' : 'ilb-ready');
+    const lbl  = ok ? 'done'     : (d.status === 'blocked' ? 'blocked'     : 'ready');
+    const toplineHtml = d.is_topline ? '<span class="il-topline">&#9733; topline</span>' : '';
+    return `<li class="il-row ${ok ? '' : 'is-pending'}" data-topline="${d.is_topline ? 'true' : 'false'}">
+      <span class="il-dot ${ok ? 'il-dot-done' : 'il-dot-pending'}"></span>
+      <span class="il-name">${d.id}</span>
+      <span class="il-aside">${toplineHtml}<span class="il-badge ${cls}">${lbl}</span></span>
+    </li>`;
+  }).join('');
 
-  let blockersHtml;
-  const blocking = d.blocking_measures || [];
-  if (d.status === 'complete' || STATS.all_measures_complete) {
-    blockersHtml = `<div class="cc-deps"><p class="cc-no-deps" style="color:#166534;font-style:normal">&#10003; All measures complete</p></div>`;
-  } else if (blocking.length === 0) {
-    blockersHtml = `<div class="cc-deps"><p class="cc-no-deps">No pending measures in this domain. Waiting on measures in other domains.</p></div>`;
-  } else {
-    const depRows = blocking.map(m => `
-      <li class="cc-dep dep-pending">
-        <span class="cc-dep-indicator"></span>
-        <span class="cc-dep-name">${m.name}</span>
-        ${m.topline ? '<span class="cc-dep-type">&#9733; topline</span>' : ''}
-      </li>`).join('');
-    blockersHtml = `<div class="cc-deps">
-      <div class="cc-deps-label">Pending measures &mdash; ${blocking.length} remaining in domain</div>
-      <ul class="cc-dep-list">${depRows}</ul>
-    </div>`;
-  }
-
-  const safeId = d.id.replace(/"/g, '&quot;');
-  return `<div class="${cardCls}" data-name="${safeId}" data-state="${stateKey}">
+  const safeDomain = domain.replace(/"/g, '&quot;');
+  return `<div class="${cardCls}" data-name="${safeDomain}" data-state="${stateKey}">
     <div class="cc-top">
-      <div class="cc-name">${d.id}</div>
+      <div class="cc-name">${domain}</div>
       <div class="cc-status">${statusHtml}</div>
     </div>
-    ${subtasksHtml}
-    ${blockersHtml}
-  </div>`;
-}
-
-// Group by domain
-const viewDomainGroups = {};
-sortedViews.forEach(v => {
-  const domain = v.data.domain || 'Other';
-  if (!viewDomainGroups[domain]) viewDomainGroups[domain] = [];
-  viewDomainGroups[domain].push(v);
-});
-
-const viewCardsHtml = Object.keys(viewDomainGroups).sort().map(domain => {
-  const safeDomain = domain.replace(/"/g, '&quot;');
-  const cards = viewDomainGroups[domain].map(buildViewCard).join('');
-  return `<div class="domain-group" data-domain="${safeDomain}">
-    <div class="domain-group-header">${domain}</div>
-    <div class="domain-cards">${cards}</div>
+    <div class="cc-track" style="margin-bottom:0.75rem"><div class="cc-fill" style="width:${mp}%;background:#8b5cf6"></div></div>
+    <ul class="item-list" style="max-height:260px">${rows}</ul>
   </div>`;
 }).join('');
 
-document.getElementById('cube-grid').innerHTML = viewCardsHtml
-  || '<p style="color:var(--g3);font-family:var(--ff-mono);font-size:0.75rem">No view tasks found.</p>';
+document.getElementById('cube-grid').innerHTML = domainCardHtml
+  || '<p style="color:var(--g3);font-family:var(--ff-mono);font-size:0.75rem">No measures found.</p>';
 
 // ── Filter & multiselect ───────────────────────────────────────────────────
 const selectedIds = new Set();
 
 function applyFilter() {
-  const query  = document.getElementById('cube-search').value.toLowerCase().trim();
-  const status = document.querySelector('#filter-chips .fchip.fc-active').dataset.status;
-  const total  = views.length;
-  let shown    = 0;
+  const query        = document.getElementById('cube-search').value.toLowerCase().trim();
+  const status       = document.querySelector('#filter-chips .fchip.fc-active').dataset.status;
+  const toplineOnly  = document.getElementById('topline-toggle').classList.contains('fc-active');
+  const total        = Object.keys(measuresByDomain).length;
+  let shown          = 0;
 
   document.querySelectorAll('#cube-grid .cube-card').forEach(card => {
     const name  = card.dataset.name;
     const state = card.dataset.state;
-    let visible;
-    if (selectedIds.size > 0) {
-      visible = selectedIds.has(name);
-    } else {
-      const matchQ = !query || name.toLowerCase().includes(query);
-      const matchS = status === 'all' || state === status;
-      visible = matchQ && matchS;
-    }
+    const domainMatchesQuery = !query || name.toLowerCase().includes(query);
+
+    // Show/hide individual rows based on topline toggle and search query
+    card.querySelectorAll('.il-row').forEach(row => {
+      const toplineOk  = !toplineOnly || row.dataset.topline === 'true';
+      const measureName = row.querySelector('.il-name').textContent.toLowerCase();
+      const searchOk   = domainMatchesQuery || !query || measureName.includes(query);
+      row.style.display = toplineOk && searchOk ? '' : 'none';
+    });
+
+    const hasVisibleRows = [...card.querySelectorAll('.il-row')].some(r => r.style.display !== 'none');
+    const matchQ = hasVisibleRows;
+    const matchS = status === 'all' || state === status;
+    const visible = matchQ && matchS;
     card.style.display = visible ? '' : 'none';
     if (visible) shown++;
-  });
-
-  // Hide domain groups whose cards are all hidden
-  document.querySelectorAll('#cube-grid .domain-group').forEach(group => {
-    const anyVisible = [...group.querySelectorAll('.cube-card')].some(c => c.style.display !== 'none');
-    group.style.display = anyVisible ? '' : 'none';
   });
 
   document.getElementById('filter-count').textContent =
     shown < total ? `${shown} of ${total}` : `${total} total`;
 
-  const hasClear = selectedIds.size > 0 || query || status !== 'all';
+  const hasClear = query || status !== 'all' || toplineOnly;
   document.getElementById('filter-clear').style.display = hasClear ? '' : 'none';
 }
 
@@ -1089,48 +1054,28 @@ document.querySelectorAll('#filter-chips .fchip').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('#filter-chips .fchip').forEach(b => b.classList.remove('fc-active'));
     btn.classList.add('fc-active');
-    selectedIds.clear();
-    document.querySelectorAll('#pcol-views .il-row-click').forEach(r => r.classList.remove('il-selected'));
     applyFilter();
   });
 });
 
 document.getElementById('cube-search').addEventListener('input', () => {
-  selectedIds.clear();
-  document.querySelectorAll('#pcol-views .il-row-click').forEach(r => r.classList.remove('il-selected'));
+  applyFilter();
+});
+
+document.getElementById('topline-toggle').addEventListener('click', () => {
+  document.getElementById('topline-toggle').classList.toggle('fc-active');
   applyFilter();
 });
 
 document.getElementById('filter-clear').addEventListener('click', () => {
-  selectedIds.clear();
   document.getElementById('cube-search').value = '';
-  document.querySelectorAll('#pcol-views .il-row-click').forEach(r => r.classList.remove('il-selected'));
   document.querySelectorAll('#filter-chips .fchip').forEach(b => b.classList.remove('fc-active'));
   document.querySelector('#filter-chips .fchip[data-status="all"]').classList.add('fc-active');
+  document.getElementById('topline-toggle').classList.remove('fc-active');
   applyFilter();
 });
 
-// Click-to-filter on views progress list
-document.querySelectorAll('#pcol-views .il-row-click').forEach(row => {
-  const name = row.dataset.id;
-  if (!name) return;
-  row.title = 'Click to filter';
-  row.addEventListener('click', () => {
-    if (selectedIds.has(name)) {
-      selectedIds.delete(name);
-      row.classList.remove('il-selected');
-    } else {
-      selectedIds.add(name);
-      row.classList.add('il-selected');
-      document.querySelectorAll('#filter-chips .fchip').forEach(b => b.classList.remove('fc-active'));
-      document.querySelector('#filter-chips .fchip[data-status="all"]').classList.add('fc-active');
-    }
-    applyFilter();
-    if (selectedIds.size === 1) {
-      document.querySelector('.sec-cubes').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  });
-});
+
 
 applyFilter();
 
