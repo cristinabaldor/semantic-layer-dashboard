@@ -35,7 +35,7 @@ from asana.rest import ApiException
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 PROJECT_GID = "1213735218595734"
-OUTPUT_FILE  = "index.html"
+OUTPUT_FILE  = "data.js"
 
 
 # ── ASANA HELPERS ─────────────────────────────────────────────────────────────
@@ -1435,12 +1435,15 @@ document.querySelectorAll('.rev').forEach(el => revObs.observe(el));
 
 
 # ── GENERATOR ─────────────────────────────────────────────────────────────────
+# Writes data.js only — index.html is never modified by this script.
+# index.html loads data.js at runtime, so manual edits to the page are safe.
 
-def generate_html(elements, stats, last_updated):
-    return (HTML_TEMPLATE
-            .replace("__ELEMENTS__", json.dumps(elements, separators=(',', ':')))
-            .replace("__STATS__",    json.dumps(stats,    separators=(',', ':')))
-            .replace("__UPDATED__",  last_updated))
+def generate_data_js(elements, stats, last_updated):
+    return (
+        f"const ELEMENTS     = {json.dumps(elements, separators=(',', ':'))};\n"
+        f"const STATS        = {json.dumps(stats,    separators=(',', ':'))};\n"
+        f"const LAST_UPDATED = {json.dumps(last_updated)};\n"
+    )
 
 
 # ── MAIN ──────────────────────────────────────────────────────────────────────
@@ -1477,17 +1480,16 @@ def main():
     elements, stats = build_graph(project_data)
 
     last_updated = datetime.datetime.now().strftime("%B %d, %Y at %-I:%M %p")
-    html = generate_html(elements, stats, last_updated)
+    data_js = generate_data_js(elements, stats, last_updated)
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        f.write(html)
+        f.write(data_js)
 
     print(f"  Models:   {stats['models_done']}/{stats['models_total']}")
     print(f"  Measures: {stats['measures_done']}/{stats['measures_total']}  "
           f"(topline {stats['topline_done']}/{stats['topline_total']})")
     print(f"  Views:    {stats['views_done']}/{stats['views_total']}")
     print(f"\n✓  Written to {OUTPUT_FILE}")
-    print(f"   Open with: open {OUTPUT_FILE}")
 
 
 if __name__ == "__main__":
