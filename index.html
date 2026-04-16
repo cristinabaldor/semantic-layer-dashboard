@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Data Marts & Semantic Layer — Progress</title>
+<title>Data Marts &amp; Semantic Layer — Progress</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
@@ -76,6 +76,8 @@ header {
 .c-muted  { color: var(--g4); border-color: var(--g2);              background: var(--g1);              }
 .c-gold   { color: #92400e;   border-color: rgba(180,83,9,0.35);    background: rgba(251,191,36,0.12);  }
 .c-red    { color: #991b1b;   border-color: rgba(239,68,68,0.45);   background: rgba(239,68,68,0.09);   }
+.c-amber  { color: #78350f;   border-color: rgba(245,158,11,0.45);  background: rgba(245,158,11,0.09);  }
+.c-purple { color: #5b21b6;   border-color: rgba(139,92,246,0.45);  background: rgba(139,92,246,0.09);  }
 
 .pulse-dot {
   display: inline-block; width: 6px; height: 6px; border-radius: 50%;
@@ -129,7 +131,6 @@ header {
   font-size: 1rem; color: var(--g4); line-height: 1.78;
   max-width: 680px; margin-bottom: 2rem;
 }
-/* hero two-column layout */
 .hero-layout {
   display: flex; align-items: flex-start; gap: 2.5rem; margin-bottom: 2.5rem;
 }
@@ -143,7 +144,6 @@ header {
   .hero-layout { flex-direction: column; }
   .hero-right { flex-direction: row; width: 100%; }
 }
-/* summary cards (right of title) */
 .summary-card {
   background: var(--g1); border: 1px solid var(--g2);
   border-radius: var(--r-lg); padding: 1.1rem 1.25rem;
@@ -163,52 +163,71 @@ header {
   overflow: hidden; margin-top: 0.6rem;
 }
 .sc-fill { height: 100%; border-radius: 2px; }
-/* three stat cards (hero bottom row) */
-.stat-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-@media (max-width: 640px) { .stat-cards { grid-template-columns: 1fr; } }
-.stat-card {
-  background: var(--g1); border: 1px solid var(--g2);
-  border-radius: var(--r-lg); padding: 1.35rem 1.5rem;
-}
-.scard-type {
-  font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
-  letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.6rem;
-}
-.scard-pct {
-  font-family: var(--ff-head); font-size: 3rem; font-weight: 800;
-  color: var(--indigo); line-height: 1; margin-bottom: 0.6rem;
-}
-.scard-track { height: 4px; background: var(--g2); border-radius: 2px; overflow: hidden; }
-.scard-fill  { height: 100%; border-radius: 2px; }
 
-/* ── Status strip (dark indigo) ── */
-.sec-status {
+/* ── Pipeline Bar ── */
+.pipeline-bar {
   background: var(--indigo);
-  padding: 1.5rem 2rem;
   border-bottom: 3px solid rgba(255,255,255,0.06);
+  padding: 1.5rem 2rem;
 }
-.status-inner {
-  max-width: var(--mw); margin: 0 auto;
-  display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;
+.pipeline-bar-inner { max-width: var(--mw); margin: 0 auto; }
+.pipeline-bar-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.4rem;
 }
-.status-eyebrow {
-  font-family: var(--ff-head); font-size: 2.4rem; font-weight: 800;
-  line-height: 1; color: var(--white);
+.pipeline-bar-eyebrow {
+  font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.45);
 }
-.status-divider { width: 1px; height: 36px; background: rgba(255,255,255,0.12); flex-shrink: 0; }
-.status-block { display: flex; flex-direction: column; gap: 0.2rem; }
-.status-num {
-  font-family: var(--ff-head); font-size: 2.4rem; font-weight: 800;
-  line-height: 1;
+.glossary-btn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 6px; padding: 0.35rem 0.8rem; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
 }
-.sn-blocked { color: var(--g3); }
-.sn-ready   { color: var(--orange); }
-.sn-bi      { color: var(--white); }
-.status-lbl {
-  font-family: var(--ff-mono); font-size: 0.75rem; font-weight: 600;
-  letter-spacing: 0.05em; text-transform: uppercase;
-  color: rgba(255,255,255,0.65);
+.glossary-btn:hover { background: rgba(255,255,255,0.13); color: var(--white); }
+.gd-pipeline-track {
+  display: grid;
+  grid-template-columns: 1fr 28px 1fr 28px 1fr 28px 1fr 28px 1fr;
+  align-items: start;
 }
+.gd-pipe-step { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; }
+.gd-pipe-icon {
+  width: 44px; height: 44px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+}
+.ps-source .gd-pipe-icon { background: rgba(87,192,233,0.12); border: 1px solid rgba(87,192,233,0.25); color: #57C0E9; }
+.ps-schema .gd-pipe-icon { background: rgba(87,192,233,0.18); border: 1px solid rgba(87,192,233,0.38); color: #7DD3F5; }
+.ps-cube   .gd-pipe-icon { background: rgba(249,162,26,0.12); border: 1px solid rgba(249,162,26,0.3);  color: #F9A21A; }
+.ps-metric .gd-pipe-icon { background: rgba(249,162,26,0.18); border: 1px solid rgba(249,162,26,0.38); color: #FBB84A; }
+.ps-bi     .gd-pipe-icon { background: rgba(34,197,94,0.10);  border: 1px solid rgba(34,197,94,0.25);  color: #4ADE80; }
+.gd-pipe-label {
+  font-family: var(--ff-head); font-size: 0.85rem; font-weight: 700;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--white); line-height: 1; text-align: center;
+}
+.gd-pipe-sub {
+  font-family: var(--ff-mono); font-size: 0.53rem; color: rgba(255,255,255,0.4);
+  text-align: center; line-height: 1.3;
+}
+.gd-pipe-stat {
+  font-family: var(--ff-mono); font-size: 0.58rem; color: rgba(255,255,255,0.55);
+  text-align: center; line-height: 1.3; min-height: 1.2em;
+}
+.gd-pipe-arrow {
+  display: flex; justify-content: center; padding-top: 16px;
+  color: rgba(255,255,255,0.18);
+}
+.pipe-stat-chip {
+  display: inline-block; font-family: var(--ff-mono); font-size: 0.52rem;
+  font-weight: 600; border-radius: 3px; padding: 0.1rem 0.38rem;
+  margin: 0 0.1rem; border: 1px solid; white-space: nowrap;
+}
+.psc-blocked { color: #fca5a5; border-color: rgba(239,68,68,0.4);  background: rgba(239,68,68,0.15); }
+.psc-pending { color: rgba(255,255,255,0.55); border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.07); }
+.psc-done    { color: #86efac; border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.12); }
 
 /* ── Section wrapper ── */
 .sec-wrap { max-width: var(--mw); margin: 0 auto; }
@@ -230,7 +249,8 @@ header {
   gap: 1.25rem;
   align-items: start;
 }
-@media (max-width: 860px) { .progress-grid { grid-template-columns: 1fr; } }
+@media (max-width: 900px)  { .progress-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px)  { .progress-grid { grid-template-columns: 1fr; } }
 
 .pcol {
   background: var(--white);
@@ -246,14 +266,9 @@ header {
   font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
   letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.45rem;
 }
-.pt-dim  { color: #0c6b96; }
-.pt-fct  { color: #92400e; }
-.pt-cube { color: var(--indigo); }
-.pcol-subtitle {
-  display: block; font-family: var(--ff-mono); font-size: 0.55rem;
-  font-weight: 500; letter-spacing: 0.04em; text-transform: none;
-  color: var(--g3); margin-top: 0.15rem;
-}
+.pt-model   { color: #0c6b96; }
+.pt-measure { color: #92400e; }
+.pt-view    { color: var(--indigo); }
 .pcol-score {
   font-family: var(--ff-head); font-size: 1.9rem; font-weight: 800;
   color: var(--indigo); line-height: 1; margin-bottom: 0.55rem;
@@ -264,10 +279,19 @@ header {
 }
 .prog-fill { height: 100%; border-radius: 3px; }
 
-.item-list { list-style: none; max-height: 400px; overflow-y: auto; padding: 0.4rem 0; }
+.item-list { list-style: none; max-height: 420px; overflow-y: auto; padding: 0.4rem 0; }
 .item-list::-webkit-scrollbar { width: 4px; }
 .item-list::-webkit-scrollbar-track { background: transparent; }
 .item-list::-webkit-scrollbar-thumb { background: var(--g2); border-radius: 2px; }
+
+/* Domain divider row inside item-list */
+.domain-div {
+  padding: 0.55rem 1.2rem 0.2rem;
+  font-family: var(--ff-mono); font-size: 0.54rem; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--g3);
+  border-top: 1px solid var(--g2); margin-top: 0.25rem;
+}
+.domain-div:first-child { border-top: none; margin-top: 0; }
 
 .il-row {
   display: flex; align-items: center; gap: 0.55rem;
@@ -275,9 +299,7 @@ header {
   transition: background 0.1s;
 }
 .il-row:hover { background: var(--g1); }
-.il-dot {
-  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
-}
+.il-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .il-dot-done    { background: var(--green); }
 .il-dot-pending { background: transparent; border: 1.5px solid var(--g3); }
 .il-name {
@@ -294,11 +316,17 @@ header {
 .ilb-pending { color: var(--g4); border-color: var(--g2);          background: transparent;           }
 .ilb-blocked { color: #991b1b; border-color: rgba(239,68,68,0.4);  background: rgba(239,68,68,0.07);  }
 .ilb-ready   { color: #92400e; border-color: rgba(249,162,26,0.45); background: rgba(249,162,26,0.09); }
-.il-meta {
-  font-family: var(--ff-mono); font-size: 0.55rem; color: var(--g3);
+.il-meta     { font-family: var(--ff-mono); font-size: 0.55rem; color: var(--g3); }
+
+/* Topline chip in measures column */
+.il-topline {
+  font-family: var(--ff-mono); font-size: 0.52rem; font-weight: 700;
+  color: #92400e; border: 1px solid rgba(249,162,26,0.55);
+  background: rgba(249,162,26,0.13); border-radius: 3px;
+  padding: 0.1rem 0.38rem; white-space: nowrap;
 }
 
-/* ── Cube cards ── */
+/* ── View cards ── */
 .sec-cubes {
   background: var(--white);
   padding: 2.75rem 2rem;
@@ -324,7 +352,7 @@ header {
 
 .cc-top {
   display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 0.75rem; margin-bottom: 0.8rem;
+  gap: 0.75rem; margin-bottom: 0.55rem;
 }
 .cc-name {
   font-family: var(--ff-head); font-size: 1.05rem; font-weight: 700;
@@ -332,10 +360,16 @@ header {
 }
 .cc-status { flex-shrink: 0; margin-top: 0.1rem; }
 
-/* metrics mini-bar */
-.cc-metrics {
-  margin-bottom: 0.85rem;
+/* Domain chip on view cards */
+.cc-domain {
+  font-family: var(--ff-mono); font-size: 0.57rem; font-weight: 600;
+  letter-spacing: 0.04em; border-radius: 3px; padding: 0.15rem 0.55rem;
+  background: rgba(87,192,233,0.1); color: #0c6b96;
+  border: 1px solid rgba(87,192,233,0.28); display: inline-block;
+  margin-bottom: 0.75rem;
 }
+
+.cc-metrics { margin-bottom: 0.85rem; }
 .cc-metrics-header {
   display: flex; justify-content: space-between; align-items: baseline;
   margin-bottom: 0.3rem;
@@ -344,18 +378,14 @@ header {
   font-family: var(--ff-mono); font-size: 0.58rem; font-weight: 600;
   letter-spacing: 0.08em; text-transform: uppercase; color: var(--g3);
 }
-.cc-metrics-count {
-  font-family: var(--ff-mono); font-size: 0.58rem; color: var(--g4);
-}
+.cc-metrics-count { font-family: var(--ff-mono); font-size: 0.58rem; color: var(--g4); }
 .cc-track { height: 4px; background: var(--g2); border-radius: 2px; overflow: hidden; }
 .cc-fill  { height: 100%; border-radius: 2px; }
 
-/* subtask list inside card */
 .cc-sub-list {
   list-style: none; margin-top: 0.5rem;
   display: flex; flex-direction: column; gap: 0.18rem;
-  max-height: 140px; overflow-y: auto;
-  padding: 0 0 0.25rem;
+  max-height: 140px; overflow-y: auto; padding: 0 0 0.25rem;
 }
 .cc-sub-list::-webkit-scrollbar { width: 3px; }
 .cc-sub-list::-webkit-scrollbar-thumb { background: var(--g2); }
@@ -369,46 +399,31 @@ header {
 .cc-sub-done    .cc-sub-name { color: var(--g3); text-decoration: line-through; }
 .cc-sub-pending .cc-sub-name { color: var(--g5); }
 
-/* deps section */
-.cc-deps {
-  border-top: 1px solid var(--g2);
-  padding-top: 0.75rem;
-  margin-top: 0.75rem;
-}
+.cc-deps { border-top: 1px solid var(--g2); padding-top: 0.75rem; margin-top: 0.75rem; }
 .cc-deps-label {
   font-family: var(--ff-mono); font-size: 0.58rem; font-weight: 600;
   letter-spacing: 0.08em; text-transform: uppercase; color: var(--g3);
   margin-bottom: 0.4rem;
 }
-.cc-dep-list {
-  list-style: none; display: flex; flex-direction: column; gap: 0.2rem;
-}
+.cc-dep-list { list-style: none; display: flex; flex-direction: column; gap: 0.2rem; }
 .cc-dep {
   display: flex; align-items: center; gap: 0.4rem;
   font-family: var(--ff-mono); font-size: 0.62rem;
 }
-.cc-dep-indicator {
-  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
-}
+.cc-dep-indicator { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 .dep-done    .cc-dep-indicator { background: var(--green); }
 .dep-pending .cc-dep-indicator { background: transparent; border: 1.5px solid #ef4444; }
 .dep-done    .cc-dep-name { color: var(--g3); text-decoration: line-through; }
 .dep-pending .cc-dep-name { color: var(--g5); font-weight: 600; }
-.cc-dep-type {
-  font-size: 0.55rem; color: var(--g3); margin-left: auto; flex-shrink: 0;
-}
-.cc-no-deps {
-  font-family: var(--ff-mono); font-size: 0.62rem; color: var(--g3); font-style: italic;
-}
+.cc-dep-type { font-size: 0.55rem; color: var(--g3); margin-left: auto; flex-shrink: 0; }
+.cc-no-deps { font-family: var(--ff-mono); font-size: 0.62rem; color: var(--g3); font-style: italic; }
 
 /* ── Filter bar ── */
 .cube-toolbar {
   display: flex; align-items: center; justify-content: space-between;
   gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem;
 }
-.filter-bar {
-  display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
-}
+.filter-bar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 .search-input {
   font-family: var(--ff-mono); font-size: 0.7rem;
   border: 1px solid var(--g2); border-radius: var(--r);
@@ -427,13 +442,11 @@ header {
   cursor: pointer; transition: all 0.12s; white-space: nowrap;
 }
 .fchip:hover { border-color: var(--g3); color: var(--g5); background: var(--g1); }
-.fchip.fc-active           { background: var(--indigo); color: var(--white); border-color: var(--indigo); }
+.fchip.fc-active            { background: var(--indigo); color: var(--white); border-color: var(--indigo); }
 .fchip.fc-blocked.fc-active { background: #991b1b; border-color: #991b1b; color: var(--white); }
 .fchip.fc-ready.fc-active   { background: #92400e; border-color: #92400e; color: var(--white); }
 .fchip.fc-done.fc-active    { background: #166534; border-color: #166534; color: var(--white); }
-.filter-count {
-  font-family: var(--ff-mono); font-size: 0.6rem; color: var(--g3); white-space: nowrap;
-}
+.filter-count { font-family: var(--ff-mono); font-size: 0.6rem; color: var(--g3); white-space: nowrap; }
 .filter-clear-btn {
   font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
   border-radius: 4px; padding: 0.25rem 0.65rem;
@@ -441,7 +454,6 @@ header {
   cursor: pointer; transition: all 0.12s;
 }
 .filter-clear-btn:hover { background: var(--g2); color: var(--g5); }
-/* clickable progress list items */
 .il-row-click { cursor: pointer; }
 .il-row-click:hover { background: rgba(87,192,233,0.07); }
 .il-row-click.il-selected {
@@ -465,6 +477,67 @@ footer {
   letter-spacing: 0.08em; color: rgba(255,255,255,0.35);
 }
 
+/* ── Glossary Drawer ── */
+.glossary-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,0.45); opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.glossary-overlay.gd-open { opacity: 1; pointer-events: all; }
+.glossary-drawer {
+  position: fixed; top: 0; right: 0; bottom: 0;
+  width: min(480px, 90vw); background: var(--white); z-index: 400;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  overflow-y: auto; display: flex; flex-direction: column;
+  box-shadow: -8px 0 40px rgba(0,0,0,0.12);
+}
+.glossary-drawer.gd-open { transform: translateX(0); }
+body.gd-lock { overflow: hidden; }
+.gd-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 1rem; padding: 1.5rem 1.75rem 1.25rem;
+  border-bottom: 1px solid var(--g2);
+  position: sticky; top: 0; background: var(--white); z-index: 1;
+}
+.gd-title-group { flex: 1; min-width: 0; }
+.gd-eyebrow {
+  font-family: var(--ff-mono); font-size: 0.55rem; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--g3);
+  display: block; margin-bottom: 0.3rem;
+}
+.gd-title {
+  font-family: var(--ff-head); font-size: 1.6rem; font-weight: 800;
+  color: var(--indigo); line-height: 1.1;
+}
+.gd-close-btn {
+  width: 32px; height: 32px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--g1); border: 1px solid var(--g2);
+  border-radius: 6px; cursor: pointer; color: var(--g4);
+  transition: background 0.12s, color 0.12s;
+}
+.gd-close-btn:hover { background: var(--g2); color: var(--g5); }
+.gd-body { padding: 1.5rem 1.75rem; display: flex; flex-direction: column; gap: 0.85rem; }
+.gd-term-card {
+  border: 1px solid var(--g2); border-left-width: 3px;
+  border-radius: var(--r-lg); padding: 1rem 1.2rem;
+}
+.gd-term-name {
+  font-family: var(--ff-head); font-size: 1.1rem; font-weight: 700;
+  color: var(--indigo); line-height: 1; margin-bottom: 0.3rem;
+}
+.gd-term-tag {
+  display: block; font-family: var(--ff-mono); font-size: 0.55rem;
+  font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--g3); margin-bottom: 0.5rem;
+}
+.gd-term-desc { font-family: var(--ff-body); font-size: 0.82rem; color: var(--g4); line-height: 1.65; }
+.gd-term-desc code {
+  font-family: var(--ff-mono); font-size: 0.85em;
+  background: var(--g1); padding: 0.1em 0.3em; border-radius: 3px;
+}
+
 /* ── Scroll reveal ── */
 .rev { opacity: 0; transform: translateY(14px);
   transition: opacity 0.5s ease, transform 0.5s ease; }
@@ -474,6 +547,54 @@ footer {
 </style>
 </head>
 <body>
+
+<!-- ── GLOSSARY OVERLAY + DRAWER ── -->
+<div class="glossary-overlay" id="glossary-overlay" aria-hidden="true"></div>
+<aside class="glossary-drawer" id="glossary-drawer" role="dialog" aria-modal="true" aria-label="Data Pipeline Glossary" aria-hidden="true">
+  <div class="gd-header">
+    <div class="gd-title-group">
+      <span class="gd-eyebrow">Reference</span>
+      <h2 class="gd-title">Data Pipeline Glossary</h2>
+    </div>
+    <button class="gd-close-btn" id="glossary-close-btn" aria-label="Close glossary">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M2 2L12 12M12 2L2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+  <div class="gd-body">
+    <div class="gd-term-card" style="border-left-color:#57C0E9">
+      <div class="gd-term-name">Model</div>
+      <span class="gd-term-tag">dbt &middot; SQL transformation</span>
+      <p class="gd-term-desc">A dbt model is a SELECT statement saved as a <code>.sql</code> file. Models transform raw source data into clean, business-ready tables — dims, facts, and bridges — that power downstream metrics and dashboards.</p>
+    </div>
+    <div class="gd-term-card" style="border-left-color:#57C0E9">
+      <div class="gd-term-name">Dimension</div>
+      <span class="gd-term-tag">dim_* &middot; descriptive attributes</span>
+      <p class="gd-term-desc">Dimension models describe the &ldquo;who, what, where&rdquo; of your data — people, places, courses, and dates. They&rsquo;re the reference tables that fact models join to for context and filtering.</p>
+    </div>
+    <div class="gd-term-card" style="border-left-color:#57C0E9">
+      <div class="gd-term-name">Fact Table</div>
+      <span class="gd-term-tag">fct_* &middot; events and transactions</span>
+      <p class="gd-term-desc">Fact models capture the &ldquo;what happened&rdquo; — attendance events, assessment scores, staff observations. Each row is a measurable event, joined to dimensions for context.</p>
+    </div>
+    <div class="gd-term-card" style="border-left-color:#F9A21A">
+      <div class="gd-term-name">Semantic Layer</div>
+      <span class="gd-term-tag">Cube &middot; MetricFlow</span>
+      <p class="gd-term-desc">The semantic layer sits between the data warehouse and BI tools. It defines business logic — joins, filters, and metric formulas — in one place so every tool sees consistent numbers.</p>
+    </div>
+    <div class="gd-term-card" style="border-left-color:#F9A21A">
+      <div class="gd-term-name">Metric / Measure</div>
+      <span class="gd-term-tag">measure &middot; computed value</span>
+      <p class="gd-term-desc">A metric is a computed value defined in the semantic layer: attendance rate, assessment proficiency %, staff retention. <strong>Topline</strong> metrics are the headline numbers tracked at the org level.</p>
+    </div>
+    <div class="gd-term-card" style="border-left-color:#22c55e">
+      <div class="gd-term-name">BI-Ready View</div>
+      <span class="gd-term-tag">view &middot; published dashboard</span>
+      <p class="gd-term-desc">A view is a fully-defined Cube perspective or Looker Explore that BI users can query directly. It&rsquo;s the final output — blocked until all upstream models and measures in its domain are complete.</p>
+    </div>
+  </div>
+</aside>
 
 <!-- ── HEADER ── -->
 <header>
@@ -499,7 +620,7 @@ footer {
           From Dashboards<br>to <span class="hero-title-accent">Metrics</span>
         </h1>
         <p class="hero-body rev d1">
-          Tracking migration of Tableau reporting views to dimension and fact models and semantic layer metrics. A metric can only ship once every required model is complete.
+          Tracking migration of Tableau reporting views to dimension and fact models and semantic layer metrics. Measures unlock once all models are complete; views unlock once all measures are complete.
         </p>
       </div>
       <div class="hero-right rev d2" id="summary-cards"><!-- filled by JS --></div>
@@ -507,9 +628,100 @@ footer {
   </div>
 </section>
 
-<!-- ── STATUS STRIP ── -->
-<div class="sec-status">
-  <div class="status-inner" id="status-inner"><!-- filled by JS --></div>
+<!-- ── PIPELINE BAR ── -->
+<div class="pipeline-bar">
+  <div class="pipeline-bar-inner">
+    <div class="pipeline-bar-top">
+      <span class="pipeline-bar-eyebrow">Data Pipeline</span>
+      <button class="glossary-btn" id="glossary-open-btn" aria-haspopup="dialog">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.2"/>
+          <path d="M6.5 5.3v3.6M6.5 4h.01" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        Glossary
+      </button>
+    </div>
+    <div class="gd-pipeline-track">
+      <div class="gd-pipe-step ps-source">
+        <div class="gd-pipe-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <rect x="2" y="2" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.9"/>
+            <rect x="11" y="2" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.55"/>
+            <rect x="2" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.55"/>
+            <rect x="11" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.3"/>
+          </svg>
+        </div>
+        <div class="gd-pipe-label">Tableau</div>
+        <div class="gd-pipe-sub">Existing Dashboards</div>
+        <div class="gd-pipe-stat" id="pipe-stat-source"></div>
+      </div>
+      <div class="gd-pipe-arrow">
+        <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
+          <path d="M1 6H17M17 6L12 1M17 6L12 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="gd-pipe-step ps-schema">
+        <div class="gd-pipe-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.4" fill="none"/>
+            <path d="M3 7h14M7 7v10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="gd-pipe-label">Models</div>
+        <div class="gd-pipe-sub">dbt + SQL</div>
+        <div class="gd-pipe-stat" id="pipe-stat-schema"></div>
+      </div>
+      <div class="gd-pipe-arrow">
+        <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
+          <path d="M1 6H17M17 6L12 1M17 6L12 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="gd-pipe-step ps-cube">
+        <div class="gd-pipe-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M10 2L17 5.5V14.5L10 18L3 14.5V5.5L10 2Z" stroke="currentColor" stroke-width="1.4" fill="none"/>
+            <path d="M10 2V18M3 5.5L17 5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity="0.5"/>
+          </svg>
+        </div>
+        <div class="gd-pipe-label">Semantic Layer</div>
+        <div class="gd-pipe-sub">Cube</div>
+        <div class="gd-pipe-stat" id="pipe-stat-cube"></div>
+      </div>
+      <div class="gd-pipe-arrow">
+        <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
+          <path d="M1 6H17M17 6L12 1M17 6L12 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="gd-pipe-step ps-metric">
+        <div class="gd-pipe-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M3 15L7 9L11 12L15 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="15" cy="5" r="1.5" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="gd-pipe-label">Metrics</div>
+        <div class="gd-pipe-sub">Topline + Domain</div>
+        <div class="gd-pipe-stat" id="pipe-stat-metric"></div>
+      </div>
+      <div class="gd-pipe-arrow">
+        <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
+          <path d="M1 6H17M17 6L12 1M17 6L12 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="gd-pipe-step ps-bi">
+        <div class="gd-pipe-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <rect x="2" y="4" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.4" fill="none"/>
+            <path d="M7 18H13M10 15V18" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M6 11V9M9 11V7M12 11V8M15 11V6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="gd-pipe-label">BI Tools</div>
+        <div class="gd-pipe-sub">Dashboards, LLMs, Self-Service</div>
+        <div class="gd-pipe-stat" id="pipe-stat-bi"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ── PROGRESS COLUMNS ── -->
@@ -517,20 +729,20 @@ footer {
   <div class="sec-wrap">
     <div class="sec-label rev">Model &amp; Metric Progress</div>
     <div class="progress-grid rev d1">
-      <div class="pcol" id="pcol-dims"><!-- filled by JS --></div>
-      <div class="pcol" id="pcol-fcts"><!-- filled by JS --></div>
-      <div class="pcol" id="pcol-cubes"><!-- filled by JS --></div>
+      <div class="pcol" id="pcol-models"><!-- filled by JS --></div>
+      <div class="pcol" id="pcol-measures"><!-- filled by JS --></div>
+      <div class="pcol" id="pcol-views"><!-- filled by JS --></div>
     </div>
   </div>
 </div>
 
-<!-- ── CUBE METRIC CARDS ── -->
+<!-- ── VIEW CARDS ── -->
 <div class="sec-cubes">
   <div class="sec-wrap">
     <div class="cube-toolbar rev">
-      <div class="sec-label" style="margin-bottom:0">Cube Metric Details &amp; Dependencies</div>
+      <div class="sec-label" style="margin-bottom:0">Views</div>
       <div class="filter-bar">
-        <input type="text" id="cube-search" class="search-input" placeholder="Search dashboards&#8230;"/>
+        <input type="text" id="cube-search" class="search-input" placeholder="Search views&#8230;"/>
         <div class="fchip-group" id="filter-chips">
           <button class="fchip fc-active" data-status="all">All</button>
           <button class="fchip fc-blocked" data-status="blocked">&#9650; Blocked</button>
@@ -549,151 +761,165 @@ footer {
 <footer>
   <div class="footer-inner">
     <span class="footer-txt">Data Marts &amp; Semantic Layer &mdash; KTAF</span>
-    <span class="footer-txt">Last updated: April 16, 2026 at 1:52 PM</span>
+    <span class="footer-txt">Last updated: April 16, 2026 at 3:43 PM</span>
   </div>
 </footer>
 
 <script>
-const ELEMENTS    = [{"data":{"id":"dim_dates","label":"dim_dates","type":"dim","status":"pending","desc":"Completed: TRUE\n\nTags: dim\n\nBlocked By: \u2014"},"position":{"x":0,"y":-124.0}},{"data":{"id":"dim_locations","label":"dim_locations","type":"dim","status":"pending","desc":"Completed: TRUE\n\nTags: dim\n\nBlocked By: \u2014"},"position":{"x":0,"y":-62.0}},{"data":{"id":"dim_regions","label":"dim_regions","type":"dim","status":"pending","desc":"Completed: TRUE\n\nTags: dim\n\nBlocked By: \u2014"},"position":{"x":0,"y":0.0}},{"data":{"id":"dim_school_calendars","label":"dim_school_calendars","type":"dim","status":"pending","desc":"Completed: TRUE\n\nTags: dim\n\nBlocked By: \u2014"},"position":{"x":0,"y":62.0}},{"data":{"id":"dim_terms","label":"dim_terms","type":"dim","status":"pending","desc":"Completed: TRUE\n\nTags: dim\n\nBlocked By: \u2014"},"position":{"x":0,"y":124.0}}];
-const STATS       = {"dims_done":0,"dims_total":5,"fcts_done":0,"fcts_total":0,"cubes_done":0,"cubes_total":0};
-const LAST_UPDATED = "April 16, 2026 at 1:52 PM";
+const ELEMENTS     = [{"data":{"id":"dim_assessments","type":"model","status":"pending","domain":"Assessments"}},{"data":{"id":"dim_assessment_comparisons","type":"model","status":"pending","domain":"Assessments"}},{"data":{"id":"dim_assessment_targets","type":"model","status":"pending","domain":"Assessments"}},{"data":{"id":"dim_student_assessment_expectations","type":"model","status":"pending","domain":"Assessments"}},{"data":{"id":"fct_assessment_scores_enrollment_scoped","type":"model","status":"pending","domain":"Assessments"}},{"data":{"id":"fct_assessment_scores_student_scoped","type":"model","status":"pending","domain":"Assessments"}},{"data":{"id":"dim_students","type":"model","status":"pending","domain":"Students"}},{"data":{"id":"dim_student_enrollments","type":"model","status":"pending","domain":"Students"}},{"data":{"id":"dim_student_contact_persons","type":"model","status":"pending","domain":"Students"}},{"data":{"id":"bridge_student_contacts","type":"model","status":"pending","domain":"Students"}},{"data":{"id":"dim_student_attendance_intervention_types","type":"model","status":"pending","domain":"Student Attendance"}},{"data":{"id":"fct_student_attendance_daily","type":"model","status":"pending","domain":"Student Attendance"}},{"data":{"id":"fct_student_attendance_interventions","type":"model","status":"pending","domain":"Student Attendance"}},{"data":{"id":"fct_student_attendance_streaks","type":"model","status":"pending","domain":"Student Attendance"}},{"data":{"id":"fct_grades_assignments","type":"model","status":"pending","domain":"Grades"}},{"data":{"id":"fct_grades_category","type":"model","status":"pending","domain":"Grades"}},{"data":{"id":"fct_grades_term","type":"model","status":"pending","domain":"Grades"}},{"data":{"id":"fct_grades_gpa","type":"model","status":"pending","domain":"Grades"}},{"data":{"id":"fct_behavioral_incidents","type":"model","status":"pending","domain":"Behavior"}},{"data":{"id":"fct_behavioral_consequences","type":"model","status":"pending","domain":"Behavior"}},{"data":{"id":"fct_family_communications","type":"model","status":"pending","domain":"Behavior"}},{"data":{"id":"dim_surveys","type":"model","status":"pending","domain":"Surveys"}},{"data":{"id":"dim_survey_administrations","type":"model","status":"pending","domain":"Surveys"}},{"data":{"id":"dim_survey_questions","type":"model","status":"pending","domain":"Surveys"}},{"data":{"id":"dim_survey_expectations","type":"model","status":"pending","domain":"Surveys"}},{"data":{"id":"bridge_survey_questions","type":"model","status":"pending","domain":"Surveys"}},{"data":{"id":"fct_survey_responses","type":"model","status":"pending","domain":"Surveys"}},{"data":{"id":"fct_survey_submissions","type":"model","status":"pending","domain":"Surveys"}},{"data":{"id":"dim_colleges","type":"model","status":"pending","domain":"Postsecondary"}},{"data":{"id":"dim_college_enrollments","type":"model","status":"pending","domain":"Postsecondary"}},{"data":{"id":"dim_staff","type":"model","status":"pending","domain":"Staff"}},{"data":{"id":"dim_staff_status","type":"model","status":"pending","domain":"Staff"}},{"data":{"id":"dim_staff_work_assignments","type":"model","status":"pending","domain":"Staff"}},{"data":{"id":"dim_work_assignment_jobs","type":"model","status":"pending","domain":"Staff"}},{"data":{"id":"dim_work_assignment_locations","type":"model","status":"pending","domain":"Staff"}},{"data":{"id":"dim_work_assignment_organizational_units","type":"model","status":"pending","domain":"Staff"}},{"data":{"id":"dim_work_assignment_reporting_relationships","type":"model","status":"pending","domain":"Staff"}},{"data":{"id":"dim_work_assignment_status","type":"model","status":"pending","domain":"Staff"}},{"data":{"id":"dim_work_assignment_types","type":"model","status":"pending","domain":"Staff"}},{"data":{"id":"fct_staff_attrition","type":"model","status":"pending","domain":"Staff"}},{"data":{"id":"fct_staff_benefits_enrollments","type":"model","status":"pending","domain":"Staff"}},{"data":{"id":"fct_staff_membership_enrollments","type":"model","status":"pending","domain":"Staff"}},{"data":{"id":"fct_work_assignment_additional_earnings","type":"model","status":"pending","domain":"Staff"}},{"data":{"id":"fct_work_assignment_compensation","type":"model","status":"pending","domain":"Staff"}},{"data":{"id":"dim_job_candidates","type":"model","status":"pending","domain":"Talent Acquisition"}},{"data":{"id":"dim_job_postings","type":"model","status":"pending","domain":"Talent Acquisition"}},{"data":{"id":"dim_staffing_positions","type":"model","status":"pending","domain":"Talent Acquisition"}},{"data":{"id":"fct_job_candidate_applications","type":"model","status":"pending","domain":"Talent Acquisition"}},{"data":{"id":"dim_staff_observation_rubrics","type":"model","status":"pending","domain":"Staff Observations"}},{"data":{"id":"dim_staff_observation_types","type":"model","status":"pending","domain":"Staff Observations"}},{"data":{"id":"dim_staff_observation_expectations","type":"model","status":"pending","domain":"Staff Observations"}},{"data":{"id":"dim_staff_observation_rubric_measurements","type":"model","status":"pending","domain":"Staff Observations"}},{"data":{"id":"dim_staff_observation_microgoal_types","type":"model","status":"pending","domain":"Staff Observations"}},{"data":{"id":"fct_staff_observations","type":"model","status":"pending","domain":"Staff Observations"}},{"data":{"id":"fct_staff_observation_scores","type":"model","status":"pending","domain":"Staff Observations"}},{"data":{"id":"fct_staff_observation_microgoals","type":"model","status":"pending","domain":"Staff Observations"}},{"data":{"id":"fct_support_tickets","type":"model","status":"pending","domain":"Staff Support"}},{"data":{"id":"dim_courses","type":"model","status":"pending","domain":"Courses"}},{"data":{"id":"dim_course_sections","type":"model","status":"pending","domain":"Courses"}},{"data":{"id":"dim_student_section_enrollments","type":"model","status":"pending","domain":"Courses"}},{"data":{"id":"bridge_course_section_teachers","type":"model","status":"pending","domain":"Courses"}},{"data":{"id":"bridge_course_section_terms","type":"model","status":"pending","domain":"Courses"}},{"data":{"id":"dim_dates","type":"model","status":"pending","domain":"Conformed Dimensions"}},{"data":{"id":"dim_locations","type":"model","status":"pending","domain":"Conformed Dimensions"}},{"data":{"id":"dim_regions","type":"model","status":"pending","domain":"Conformed Dimensions"}},{"data":{"id":"dim_school_calendars","type":"model","status":"pending","domain":"Conformed Dimensions"}},{"data":{"id":"dim_terms","type":"model","status":"pending","domain":"Conformed Dimensions"}},{"data":{"id":"assessments.formative_mastery_rate_ytd","type":"measure","status":"blocked","domain":"Assessments","is_topline":true,"desc":"The running mastery rate across all formative assessment types (Quick Assessments, Multiple-Choice Quick Questions, and "}},{"data":{"id":"assessments.crq_mastery_rate_ytd","type":"measure","status":"blocked","domain":"Assessments","is_topline":true,"desc":"The running mastery rate for Constructed Response Questions. Scoped to: Miami schools."}},{"data":{"id":"assessments.iready_diagnostic_proficiency_rate","type":"measure","status":"blocked","domain":"Assessments","is_topline":true,"desc":"The percentage of students who scored at or above the proficiency threshold on their most recent i-Ready diagnostic asse"}},{"data":{"id":"assessments.iready_stretch_growth_on_track_rate","type":"measure","status":"blocked","domain":"Assessments","is_topline":true,"desc":"The percentage of students who are on track to meet their benchmark or fall-back stretch growth target on i-Ready based "}},{"data":{"id":"assessments.iready_lessons_passed_rate","type":"measure","status":"blocked","domain":"Assessments","is_topline":true,"desc":"The percentage of students who passed at least 2 i-Ready online lessons in the current week. This measures consistent en"}},{"data":{"id":"assessments.iready_time_on_task_minutes","type":"measure","status":"blocked","domain":"Assessments","is_topline":true,"desc":"The total number of minutes each student spent actively working in i-Ready during the week."}},{"data":{"id":"assessments.dibels_pm_mastery_rate","type":"measure","status":"blocked","domain":"Assessments","is_topline":true,"desc":"The percentage of students who met the overall criteria for their current DIBELS Progress Monitoring round. DIBELS is a "}},{"data":{"id":"assessments.dibels_pm_completion_rate","type":"measure","status":"blocked","domain":"Assessments","is_topline":true,"desc":"The percentage of students who have a completed DIBELS Progress Monitoring test on record for the current round. This me"}},{"data":{"id":"assessments.dibels_benchmark_proficiency_rate","type":"measure","status":"blocked","domain":"Assessments","is_topline":true,"desc":"The percentage of students who scored at or above the proficiency level on the DIBELS Benchmark assessment, administered"}},{"data":{"id":"assessments.star_diagnostic_proficiency_rate","type":"measure","status":"blocked","domain":"Assessments","is_topline":true,"desc":"The percentage of students who scored at or above the state benchmark proficiency level on the STAR assessment. Scoped t"}},{"data":{"id":"assessments.state_assessment_proficiency_rate","type":"measure","status":"blocked","domain":"Assessments","is_topline":true,"desc":"The percentage of students who scored at proficiency or above on state standardized tests. Scoped by geography: non-Miam"}},{"data":{"id":"assessments.fast_proficiency_rate","type":"measure","status":"blocked","domain":"Assessments","is_topline":true,"desc":"The percentage of students who scored at proficiency on FAST, Florida's state assessment. Scoped to: Miami schools only."}},{"data":{"id":"assessments.sat_college_ready_rate","type":"measure","status":"blocked","domain":"Assessments","is_topline":true,"desc":"The percentage of students whose highest SAT score on record is 1010 or above, the college-readiness benchmark."}},{"data":{"id":"assessments.psat_nmsqt_at_benchmark_rate","type":"measure","status":"blocked","domain":"Assessments","is_topline":true,"desc":"The percentage of students whose highest PSAT NMSQT score on record is 910 or above."}},{"data":{"id":"assessments.psat_89_at_benchmark_rate","type":"measure","status":"blocked","domain":"Assessments","is_topline":true,"desc":"The percentage of students whose highest PSAT 8/9 score on record is 860 or above."}},{"data":{"id":"students.headcount","type":"measure","status":"blocked","domain":"Students","is_topline":true,"desc":"The total number of students who were enrolled."}},{"data":{"id":"students.headcount_in_network","type":"measure","status":"blocked","domain":"Students","is_topline":true,"desc":"Total enrolled students, excluding those in self-contained programs and out-of-district placements. This is the 'in-netw"}},{"data":{"id":"students.seat_target_fill_rate","type":"measure","status":"blocked","domain":"Students","is_topline":true,"desc":"In-network enrollment (without SC/OOD) expressed as a percentage of the school's or region's seat target for the year."}},{"data":{"id":"students.budget_target_fill_rate","type":"measure","status":"blocked","domain":"Students","is_topline":true,"desc":"In-network enrollment (without SC/OOD) expressed as a percentage of the school's or region's budget enrollment target."}},{"data":{"id":"students.pct_retention_ytd","type":"measure","status":"blocked","domain":"Students","is_topline":true,"desc":"The percentage of students who have remained enrolled (not voluntarily left or been transferred out) as of the current w"}},{"data":{"id":"student_attendance.avg_daily_attendance_ytd","type":"measure","status":"blocked","domain":"Student Attendance","is_topline":true,"desc":"The running average daily attendance rate for the year to date, calculated as total days attended divided by total possi"}},{"data":{"id":"student_attendance.pct_chronic_absenteeism_ytd","type":"measure","status":"blocked","domain":"Student Attendance","is_topline":true,"desc":"The percentage of students whose running year-to-date attendance rate is at or below 90%. A student is considered chroni"}},{"data":{"id":"student_attendance.pct_truancy","type":"measure","status":"blocked","domain":"Student Attendance","is_topline":true,"desc":"The percentage of students who have been flagged as truant according to state or district criteria."}},{"data":{"id":"student_attendance.successful_contact_rate_ytd","type":"measure","status":"blocked","domain":"Student Attendance","is_topline":true,"desc":"The running rate of successful parent/guardian attendance contacts \u2014 the number of completed contacts divided by the num"}},{"data":{"id":"student_attendance.intervention_completion_rate","type":"measure","status":"blocked","domain":"Student Attendance","is_topline":true,"desc":"The percentage of anticipated intervention calls for chronically absent students that have actually been completed. This"}},{"data":{"id":"grades.weighted_gpa_on_track_rate","type":"measure","status":"blocked","domain":"Grades","is_topline":true,"desc":"The percentage of students who have a year-to-date GPA of 3.00 or higher. This metric is also shared with the GPA, ACT &"}},{"data":{"id":"grades.projected_unweighted_gpa_on_track_rate","type":"measure","status":"blocked","domain":"Grades","is_topline":true,"desc":"The percentage of students whose projected cumulative unweighted GPA across all years in network is at or above 3.00."}},{"data":{"id":"behavior.suspension_rate_ytd","type":"measure","status":"blocked","domain":"Behavior","is_topline":true,"desc":"The running percentage of students who have received at least one out-of-school or in-school suspension during the curre"}},{"data":{"id":"behavior.pct_receiving_incentive","type":"measure","status":"blocked","domain":"Behavior","is_topline":true,"desc":"The percentage of students who received their quarterly behavior or culture incentive, indicating they met the behaviora"}},{"data":{"id":"surveys.avg_rating","type":"measure","status":"blocked","domain":"Surveys","is_topline":true,"desc":"The average rating given over all scored rows on a survey. For Topline Scoped to: Students and families responses on the"}},{"data":{"id":"postsecondary.pct_ba_applied","type":"measure","status":"blocked","domain":"Postsecondary","is_topline":true,"desc":"The percentage of students (typically 12th graders) who have submitted at least one application to a Bachelor's degree ("}},{"data":{"id":"postsecondary.pct_ba_accepted","type":"measure","status":"blocked","domain":"Postsecondary","is_topline":true,"desc":"The percentage of students who have received at least one acceptance to a Bachelor's degree program."}},{"data":{"id":"postsecondary.pct_ba_matriculated","type":"measure","status":"blocked","domain":"Postsecondary","is_topline":true,"desc":"The percentage of students who have confirmed enrollment (matriculated) into a Bachelor's degree program."}},{"data":{"id":"postsecondary.pct_meeting_ba_quality_bar","type":"measure","status":"blocked","domain":"Postsecondary","is_topline":true,"desc":"The percentage of students who have submitted applications that meet the network's 4-year college quality bar \u2014 meaning "}},{"data":{"id":"staff.pct_retention_weekly","type":"measure","status":"blocked","domain":"Staff","is_topline":true,"desc":"The percentage of active staff who have remained in their role (not resigned or been separated) through the current week"}},{"data":{"id":"staff.headcount ","type":"measure","status":"blocked","domain":"Staff","is_topline":false,"desc":"description:"}},{"data":{"id":"staff.avg_base_compensation","type":"measure","status":"blocked","domain":"Staff","is_topline":false,"desc":"description:"}},{"data":{"id":"staff.avg_additional_earnings ","type":"measure","status":"blocked","domain":"Staff","is_topline":false,"desc":"description:"}},{"data":{"id":"staff.pct_managers ","type":"measure","status":"blocked","domain":"Staff","is_topline":false,"desc":"description:"}},{"data":{"id":"staff.salary_change","type":"measure","status":"blocked","domain":"Staff","is_topline":false,"desc":"description:"}},{"data":{"id":"staff.pct_attrition_foundation ","type":"measure","status":"blocked","domain":"Staff","is_topline":false,"desc":"description:"}},{"data":{"id":"staff.pct_attrition_nj_compliance ","type":"measure","status":"blocked","domain":"Staff","is_topline":false,"desc":"description:"}},{"data":{"id":"staff.pct_attrition_recruitment ","type":"measure","status":"blocked","domain":"Staff","is_topline":false,"desc":"description:"}},{"data":{"id":"staff.pct_attrition_resignations ","type":"measure","status":"blocked","domain":"Staff","is_topline":false,"desc":"description:"}},{"data":{"id":"staff.pct_attrition_terminations ","type":"measure","status":"blocked","domain":"Staff","is_topline":false,"desc":"description:"}},{"data":{"id":"staff.pct_attrition_other ","type":"measure","status":"blocked","domain":"Staff","is_topline":false,"desc":"description:"}},{"data":{"id":"talent.pct_staffed","type":"measure","status":"blocked","domain":"Talent Acquisition","is_topline":true,"desc":"The percentage of total staffing model seats (all open positions budgeted for the school/region) that are currently fill"}},{"data":{"id":"staff_observations.pct_assigned_microgoals","type":"measure","status":"blocked","domain":"Staff Observations","is_topline":true,"desc":"The percentage of active staff members who have at least one microgoal assigned during the current week. Microgoals are "}},{"data":{"id":"College Admission Readiness Assessments Tracker (CARAT)","type":"view","status":"blocked","domain":"Assessments","sub_done":0,"sub_total":19,"subtasks":[{"name":"% Highest SAT Combined >= 1010","done":false},{"name":"% of 9-12 BOY B/FB Students Meeting Stretch Growth","done":false},{"name":"% of 9-12 Students Mastering Most-Recent Formative Assessment (MQQ or QA)","done":false},{"name":"% PSAT 8/9 Combined >= 860","done":false},{"name":"% PSAT/NMSQT Combined >= 910","done":false},{"name":"% High School Graduation Ready","done":false},{"name":"% College Ready","done":false},{"name":"% SAT 1+ Attempts","done":false},{"name":"% SAT 2+ Attempts","done":false},{"name":"Average Score","done":false},{"name":"% Meeting Goal Score","done":false},{"name":"# Test Attempts","done":false},{"name":"Max Score","done":false},{"name":"Superscore","done":false},{"name":"% Taking AP Course","done":false},{"name":"# AP Courses","done":false},{"name":"% Taking AP Test","done":false},{"name":"% Per Score","done":false},{"name":"% Passing Score >=3","done":false}],"blocking_measures":[{"name":"assessments.formative_mastery_rate_ytd","topline":true},{"name":"assessments.crq_mastery_rate_ytd","topline":true},{"name":"assessments.iready_diagnostic_proficiency_rate","topline":true},{"name":"assessments.iready_stretch_growth_on_track_rate","topline":true},{"name":"assessments.iready_lessons_passed_rate","topline":true},{"name":"assessments.iready_time_on_task_minutes","topline":true},{"name":"assessments.dibels_pm_mastery_rate","topline":true},{"name":"assessments.dibels_pm_completion_rate","topline":true},{"name":"assessments.dibels_benchmark_proficiency_rate","topline":true},{"name":"assessments.star_diagnostic_proficiency_rate","topline":true},{"name":"assessments.state_assessment_proficiency_rate","topline":true},{"name":"assessments.fast_proficiency_rate","topline":true},{"name":"assessments.sat_college_ready_rate","topline":true},{"name":"assessments.psat_nmsqt_at_benchmark_rate","topline":true},{"name":"assessments.psat_89_at_benchmark_rate","topline":true}]}},{"data":{"id":"Literacy Dashboard","type":"view","status":"blocked","domain":"Assessments","sub_done":0,"sub_total":10,"subtasks":[{"name":"#/% Participation in DIBELS PM ","done":false},{"name":"% at each Measure Standard Label mClass Grouping","done":false},{"name":"% Composite Growth ","done":false},{"name":"% Students at each Level","done":false},{"name":"% Meeting Goal","done":false},{"name":"Avg Measure Standard","done":false},{"name":"Avg Goal","done":false},{"name":"Avg Benchmark Goal","done":false},{"name":"% Sight Word Mastery","done":false},{"name":"% Above/Well Above on Most Recent DIBELS Benchmark","done":false}],"blocking_measures":[{"name":"assessments.formative_mastery_rate_ytd","topline":true},{"name":"assessments.crq_mastery_rate_ytd","topline":true},{"name":"assessments.iready_diagnostic_proficiency_rate","topline":true},{"name":"assessments.iready_stretch_growth_on_track_rate","topline":true},{"name":"assessments.iready_lessons_passed_rate","topline":true},{"name":"assessments.iready_time_on_task_minutes","topline":true},{"name":"assessments.dibels_pm_mastery_rate","topline":true},{"name":"assessments.dibels_pm_completion_rate","topline":true},{"name":"assessments.dibels_benchmark_proficiency_rate","topline":true},{"name":"assessments.star_diagnostic_proficiency_rate","topline":true},{"name":"assessments.state_assessment_proficiency_rate","topline":true},{"name":"assessments.fast_proficiency_rate","topline":true},{"name":"assessments.sat_college_ready_rate","topline":true},{"name":"assessments.psat_nmsqt_at_benchmark_rate","topline":true},{"name":"assessments.psat_89_at_benchmark_rate","topline":true}]}},{"data":{"id":"DDI Suite","type":"view","status":"blocked","domain":"Assessments","sub_done":0,"sub_total":0,"subtasks":[],"blocking_measures":[{"name":"assessments.formative_mastery_rate_ytd","topline":true},{"name":"assessments.crq_mastery_rate_ytd","topline":true},{"name":"assessments.iready_diagnostic_proficiency_rate","topline":true},{"name":"assessments.iready_stretch_growth_on_track_rate","topline":true},{"name":"assessments.iready_lessons_passed_rate","topline":true},{"name":"assessments.iready_time_on_task_minutes","topline":true},{"name":"assessments.dibels_pm_mastery_rate","topline":true},{"name":"assessments.dibels_pm_completion_rate","topline":true},{"name":"assessments.dibels_benchmark_proficiency_rate","topline":true},{"name":"assessments.star_diagnostic_proficiency_rate","topline":true},{"name":"assessments.state_assessment_proficiency_rate","topline":true},{"name":"assessments.fast_proficiency_rate","topline":true},{"name":"assessments.sat_college_ready_rate","topline":true},{"name":"assessments.psat_nmsqt_at_benchmark_rate","topline":true},{"name":"assessments.psat_89_at_benchmark_rate","topline":true}]}},{"data":{"id":"APM Dashboard","type":"view","status":"blocked","domain":"Assessments","sub_done":0,"sub_total":0,"subtasks":[],"blocking_measures":[{"name":"assessments.formative_mastery_rate_ytd","topline":true},{"name":"assessments.crq_mastery_rate_ytd","topline":true},{"name":"assessments.iready_diagnostic_proficiency_rate","topline":true},{"name":"assessments.iready_stretch_growth_on_track_rate","topline":true},{"name":"assessments.iready_lessons_passed_rate","topline":true},{"name":"assessments.iready_time_on_task_minutes","topline":true},{"name":"assessments.dibels_pm_mastery_rate","topline":true},{"name":"assessments.dibels_pm_completion_rate","topline":true},{"name":"assessments.dibels_benchmark_proficiency_rate","topline":true},{"name":"assessments.star_diagnostic_proficiency_rate","topline":true},{"name":"assessments.state_assessment_proficiency_rate","topline":true},{"name":"assessments.fast_proficiency_rate","topline":true},{"name":"assessments.sat_college_ready_rate","topline":true},{"name":"assessments.psat_nmsqt_at_benchmark_rate","topline":true},{"name":"assessments.psat_89_at_benchmark_rate","topline":true}]}},{"data":{"id":"State Testing Accommodations Tracker","type":"view","status":"blocked","domain":"Assessments","sub_done":0,"sub_total":0,"subtasks":[],"blocking_measures":[{"name":"assessments.formative_mastery_rate_ytd","topline":true},{"name":"assessments.crq_mastery_rate_ytd","topline":true},{"name":"assessments.iready_diagnostic_proficiency_rate","topline":true},{"name":"assessments.iready_stretch_growth_on_track_rate","topline":true},{"name":"assessments.iready_lessons_passed_rate","topline":true},{"name":"assessments.iready_time_on_task_minutes","topline":true},{"name":"assessments.dibels_pm_mastery_rate","topline":true},{"name":"assessments.dibels_pm_completion_rate","topline":true},{"name":"assessments.dibels_benchmark_proficiency_rate","topline":true},{"name":"assessments.star_diagnostic_proficiency_rate","topline":true},{"name":"assessments.state_assessment_proficiency_rate","topline":true},{"name":"assessments.fast_proficiency_rate","topline":true},{"name":"assessments.sat_college_ready_rate","topline":true},{"name":"assessments.psat_nmsqt_at_benchmark_rate","topline":true},{"name":"assessments.psat_89_at_benchmark_rate","topline":true}]}},{"data":{"id":"KIPP Miami FAST & iReady Analysis","type":"view","status":"blocked","domain":"Assessments","sub_done":0,"sub_total":0,"subtasks":[],"blocking_measures":[{"name":"assessments.formative_mastery_rate_ytd","topline":true},{"name":"assessments.crq_mastery_rate_ytd","topline":true},{"name":"assessments.iready_diagnostic_proficiency_rate","topline":true},{"name":"assessments.iready_stretch_growth_on_track_rate","topline":true},{"name":"assessments.iready_lessons_passed_rate","topline":true},{"name":"assessments.iready_time_on_task_minutes","topline":true},{"name":"assessments.dibels_pm_mastery_rate","topline":true},{"name":"assessments.dibels_pm_completion_rate","topline":true},{"name":"assessments.dibels_benchmark_proficiency_rate","topline":true},{"name":"assessments.star_diagnostic_proficiency_rate","topline":true},{"name":"assessments.state_assessment_proficiency_rate","topline":true},{"name":"assessments.fast_proficiency_rate","topline":true},{"name":"assessments.sat_college_ready_rate","topline":true},{"name":"assessments.psat_nmsqt_at_benchmark_rate","topline":true},{"name":"assessments.psat_89_at_benchmark_rate","topline":true}]}},{"data":{"id":"State Testing Analysis Tool","type":"view","status":"blocked","domain":"Assessments","sub_done":0,"sub_total":14,"subtasks":[{"name":"Accommodations Y/N","done":false},{"name":"Accommodations - Math Test Counts","done":false},{"name":"Accommodations - ELA Test Counts","done":false},{"name":"Accommodations - % by Format","done":false},{"name":"Avg Scale Score iReady","done":false},{"name":"% Standard Mastery FAST","done":false},{"name":"% Grade 3 Retention Flag FAST","done":false},{"name":"% Growth FAST","done":false},{"name":"% Achieving Growth FAST","done":false},{"name":"% per Projected Sublevel FAST","done":false},{"name":"% Meeting Goal","done":false},{"name":"# Meeting Goal","done":false},{"name":"# Proficient","done":false},{"name":"% Proficient","done":false}],"blocking_measures":[{"name":"assessments.formative_mastery_rate_ytd","topline":true},{"name":"assessments.crq_mastery_rate_ytd","topline":true},{"name":"assessments.iready_diagnostic_proficiency_rate","topline":true},{"name":"assessments.iready_stretch_growth_on_track_rate","topline":true},{"name":"assessments.iready_lessons_passed_rate","topline":true},{"name":"assessments.iready_time_on_task_minutes","topline":true},{"name":"assessments.dibels_pm_mastery_rate","topline":true},{"name":"assessments.dibels_pm_completion_rate","topline":true},{"name":"assessments.dibels_benchmark_proficiency_rate","topline":true},{"name":"assessments.star_diagnostic_proficiency_rate","topline":true},{"name":"assessments.state_assessment_proficiency_rate","topline":true},{"name":"assessments.fast_proficiency_rate","topline":true},{"name":"assessments.sat_college_ready_rate","topline":true},{"name":"assessments.psat_nmsqt_at_benchmark_rate","topline":true},{"name":"assessments.psat_89_at_benchmark_rate","topline":true}]}},{"data":{"id":"Data Quality Dashboard","type":"view","status":"blocked","domain":"Students","sub_done":0,"sub_total":16,"subtasks":[{"name":"# Missing Return Date Suspensions","done":false},{"name":"# Missing Suspension Letter ","done":false},{"name":"# Missing SSDS Suspensions","done":false},{"name":"# MIssing/Invalid NJ Categories Suspensions","done":false},{"name":"# Invalid Suspensions","done":false},{"name":"# Incident Discrepancy Suspensions","done":false},{"name":"# Attendance Discrepancy Suspensions","done":false},{"name":"# Gradebook Audit Flags","done":false},{"name":"% Gradebook Audit Category Complete","done":false},{"name":"% Missing Assignments","done":false},{"name":"% Complete Assignments","done":false},{"name":"# Missing Assignments","done":false},{"name":"# Valid Assignments","done":false},{"name":"# Expected Assignments","done":false},{"name":"Percent Correct Assessment Entries","done":false},{"name":"# Student Information Errors","done":false}],"blocking_measures":[{"name":"students.headcount","topline":true},{"name":"students.headcount_in_network","topline":true},{"name":"students.seat_target_fill_rate","topline":true},{"name":"students.budget_target_fill_rate","topline":true},{"name":"students.pct_retention_ytd","topline":true}]}},{"data":{"id":"High School Early Warning Dashboard","type":"view","status":"blocked","domain":"Students","sub_done":0,"sub_total":10,"subtasks":[{"name":"Total Community Service Hours","done":false},{"name":"% On Track for Promotion","done":false},{"name":"Y1 Failed Courses","done":false},{"name":"Y1 Projected Credits","done":false},{"name":"# Suspensions","done":false},{"name":"Days Suspended","done":false},{"name":"% Eligible for Graduation","done":false},{"name":"Avg College Assessment Scale Scores","done":false},{"name":"Avg College Assessment Cutoff Score","done":false},{"name":"Avg College Assessment Points Short","done":false}],"blocking_measures":[{"name":"students.headcount","topline":true},{"name":"students.headcount_in_network","topline":true},{"name":"students.seat_target_fill_rate","topline":true},{"name":"students.budget_target_fill_rate","topline":true},{"name":"students.pct_retention_ytd","topline":true}]}},{"data":{"id":"Ops Dashboard","type":"view","status":"blocked","domain":"Students","sub_done":0,"sub_total":21,"subtasks":[{"name":"% Attrition","done":false},{"name":"# Attrition","done":false},{"name":"% LEP","done":false},{"name":"% IEP","done":false},{"name":"% Free and Reduced Lunch","done":false},{"name":"% Paid Lunch","done":false},{"name":"# Missing Lunch App","done":false},{"name":"% Retention","done":false},{"name":"Need/Surplus Miami","done":false},{"name":"Need/Surplus NJ","done":false},{"name":"Days Total","done":false},{"name":"Target Enrollment ADE","done":false},{"name":"Average Daily Enrollment","done":false},{"name":"# Target Enrollment","done":false},{"name":"# Students","done":false},{"name":"# Possible Days (Sum of all Students)","done":false},{"name":"# Days Open (By School/Grade)","done":false},{"name":"# Days Present (Sum of all Students)","done":false},{"name":"# Days Average Daily Attendance","done":false},{"name":"% Students Persisting","done":false},{"name":"# Enrolled","done":false}],"blocking_measures":[{"name":"students.headcount","topline":true},{"name":"students.headcount_in_network","topline":true},{"name":"students.seat_target_fill_rate","topline":true},{"name":"students.budget_target_fill_rate","topline":true},{"name":"students.pct_retention_ytd","topline":true}]}},{"data":{"id":"Newark Home Instruction Tracker","type":"view","status":"blocked","domain":"Students","sub_done":0,"sub_total":4,"subtasks":[{"name":"% on Home Instruction","done":false},{"name":"Hours per Week","done":false},{"name":"Hourly Rate","done":false},{"name":"% Approved Y/N","done":false}],"blocking_measures":[{"name":"students.headcount","topline":true},{"name":"students.headcount_in_network","topline":true},{"name":"students.seat_target_fill_rate","topline":true},{"name":"students.budget_target_fill_rate","topline":true},{"name":"students.pct_retention_ytd","topline":true}]}},{"data":{"id":"Promotional Status Dashboard","type":"view","status":"blocked","domain":"Students","sub_done":0,"sub_total":5,"subtasks":[{"name":"% by Promotional Status","done":false},{"name":"iReady Reading Percentile","done":false},{"name":"Most Recent Dibels Scale","done":false},{"name":"Dibels Scale Current Percentile","done":false},{"name":"% Bottom 15 Percentile","done":false}],"blocking_measures":[{"name":"students.headcount","topline":true},{"name":"students.headcount_in_network","topline":true},{"name":"students.seat_target_fill_rate","topline":true},{"name":"students.budget_target_fill_rate","topline":true},{"name":"students.pct_retention_ytd","topline":true}]}},{"data":{"id":"Attendance Dashboard","type":"view","status":"blocked","domain":"Student Attendance","sub_done":4,"sub_total":18,"subtasks":[{"name":"% Average Daily Attendance","done":true},{"name":"% Required Intervention Completed","done":true},{"name":"% Truant","done":true},{"name":"% Successful Attendance Calls","done":true},{"name":"% Chronic Absentee","done":false},{"name":"% Chronic Tardiness ","done":false},{"name":"% Average On Time","done":false},{"name":"# Days to 90%","done":false},{"name":"# Days Present","done":false},{"name":"# Days Absent","done":false},{"name":"# Days ISS","done":false},{"name":"# Days OSS","done":false},{"name":"# Days Tardy","done":false},{"name":"# Days Absent Weighted (HS)","done":false},{"name":"% ADA Weighted (HS)","done":false},{"name":"# Days Unexcused Absence","done":false},{"name":"# Kids at risk for Truancy","done":false},{"name":"# Kids on cusp for 90% attendance","done":false}],"blocking_measures":[{"name":"student_attendance.avg_daily_attendance_ytd","topline":true},{"name":"student_attendance.pct_chronic_absenteeism_ytd","topline":true},{"name":"student_attendance.pct_truancy","topline":true},{"name":"student_attendance.successful_contact_rate_ytd","topline":true},{"name":"student_attendance.intervention_completion_rate","topline":true}]}},{"data":{"id":"Gradebook and GPA Dashboard","type":"view","status":"blocked","domain":"Grades","sub_done":0,"sub_total":19,"subtasks":[{"name":"% of 9-12 Projected Unweighted Cumulative GPA >= 3.0","done":false},{"name":"% Weighted Y1 GPA >= 3.0","done":false},{"name":"Avg GPA by Term","done":false},{"name":"Avg Cumulative Y1 GPA","done":false},{"name":"Avg Cumulative Y1 GPA Unweighted","done":false},{"name":"Avg Core Cumulative Y1 GPA","done":false},{"name":"Avg Cumulative Y1 GPA Projected","done":false},{"name":"Avg Cumulative Y1 GPA Projected S1","done":false},{"name":"Avg Culmulative Y1 GPA Projected S1 Unweighted","done":false},{"name":"# Students Failing Courses ","done":false},{"name":"% Students Failing Courses ","done":false},{"name":"# Students Passing Courses","done":false},{"name":"% Students Passing Courses","done":false},{"name":"# Failed Courses per Student","done":false},{"name":"% Students with 3.0+ GPA","done":false},{"name":"# Letter Grades (A-F)","done":false},{"name":"Avg Percent Grades (0-100)","done":false},{"name":"# Classes per Teacher","done":false},{"name":"# Students per Teacher","done":false}],"blocking_measures":[{"name":"grades.weighted_gpa_on_track_rate","topline":true},{"name":"grades.projected_unweighted_gpa_on_track_rate","topline":true}]}},{"data":{"id":"cube: OKRTS Dashboard","type":"view","status":"blocked","domain":"Behavior","sub_done":0,"sub_total":8,"subtasks":[{"name":"% Suspended","done":false},{"name":"% Students Earning Quarterly Incentives","done":false},{"name":"# Students Suspended","done":false},{"name":"# Suspensions","done":false},{"name":"% with IEP","done":false},{"name":"% Difference IEP/no IEP","done":false},{"name":"# Incidents/Referrals ","done":false},{"name":"# Behavior (BEAT Points)","done":false}],"blocking_measures":[{"name":"behavior.suspension_rate_ytd","topline":true},{"name":"behavior.pct_receiving_incentive","topline":true}]}},{"data":{"id":"Personalized Survey Links","type":"view","status":"blocked","domain":"Surveys","sub_done":0,"sub_total":0,"subtasks":[],"blocking_measures":[{"name":"surveys.avg_rating","topline":true}]}},{"data":{"id":"Survey Dashboard","type":"view","status":"blocked","domain":"Surveys","sub_done":0,"sub_total":7,"subtasks":[{"name":"% Agree and Strongly Agree (Likert)","done":false},{"name":"% each value (dropdowns, multi-selects)","done":false},{"name":"# Respondents","done":false},{"name":"Avg row score (Likert)","done":false},{"name":"Avg overall score (Likert)","done":false},{"name":"% Survey Completion","done":false},{"name":"Avg School Community Diagnostic Student Overall Score","done":false}],"blocking_measures":[{"name":"surveys.avg_rating","topline":true}]}},{"data":{"id":"School Community Diagnostic","type":"view","status":"blocked","domain":"Surveys","sub_done":0,"sub_total":0,"subtasks":[],"blocking_measures":[{"name":"surveys.avg_rating","topline":true}]}},{"data":{"id":"KIPP Forward Data Suite","type":"view","status":"blocked","domain":"Postsecondary","sub_done":0,"sub_total":58,"subtasks":[{"name":"% Applied to 4-year Colleges","done":false},{"name":"% Accepted to 4-year Colleges","done":false},{"name":"% Matriculated to 4-year Colleges","done":false},{"name":"% of 4-year BGP Students Meeting Application Quality Bar","done":false},{"name":"% Accepted (All, BA, AA, CTE)","done":false},{"name":"% Post Secondary Graduation","done":false},{"name":"% AS by Number of AS","done":false},{"name":"% BGP by Type of BGP","done":false},{"name":"Avg ACT Attempts","done":false},{"name":"Avg SAT Attempts","done":false},{"name":"% Student FSA ID","done":false},{"name":"% Parent FSA ID","done":false},{"name":"% FAFSA Complete","done":false},{"name":"% HESAA Complete","done":false},{"name":"% Submitted (All, BA, AA, CTE)","done":false},{"name":"% EOF Applicants","done":false},{"name":"% 1 Recommendation","done":false},{"name":"% 2 Recommendation","done":false},{"name":"% Personal Statement","done":false},{"name":"% Supp Essay","done":false},{"name":"% Accepted Early","done":false},{"name":"% CCDM","done":false},{"name":"% Matriculated (All, BA, AA, CTE)","done":false},{"name":"# Wishlist","done":false},{"name":"# Wishlist QB","done":false},{"name":"ECC Wishlist Min","done":false},{"name":"ECC Wishlist Avg","done":false},{"name":"ECC Submitted Min","done":false},{"name":"ECC Submitted Avg","done":false},{"name":"ECC Accepted Max","done":false},{"name":"ECC Accepted Min","done":false},{"name":"ECC Accepted Avg","done":false},{"name":"ECC Matriculated Min","done":false},{"name":"ECC Matriculated Avg","done":false},{"name":"% in EA/ED Cohort","done":false},{"name":"Avg # of App Outcomes","done":false},{"name":"Avg # Award Letters","done":false},{"name":"% Closed EA/ED Applications","done":false},{"name":"% Closed Applications","done":false},{"name":"% with Acceptance Meeting QB","done":false},{"name":"HS GPA","done":false},{"name":"Highest ACT Score","done":false},{"name":"% Enrollment Verification","done":false},{"name":"#/% Persisting","done":false},{"name":"% Benchmark Complete","done":false},{"name":"% Transcripts","done":false},{"name":"% Grad Plan Complete","done":false},{"name":"Avg College GPA (Term and Cum)","done":false},{"name":"Expected [Year] Grad","done":false},{"name":"School Visit Count","done":false},{"name":"Credits Earned","done":false},{"name":"#/% Strong Career Launch","done":false},{"name":"% Completing Career Launch Survey","done":false},{"name":"# Reenrolled","done":false},{"name":"Days Since Last Successful Contact","done":false},{"name":"Days Since Last Outreach","done":false},{"name":"School Performance Index - # Attending","done":false},{"name":"School Performance Index - # Graduated","done":false}],"blocking_measures":[{"name":"postsecondary.pct_ba_applied","topline":true},{"name":"postsecondary.pct_ba_accepted","topline":true},{"name":"postsecondary.pct_ba_matriculated","topline":true},{"name":"postsecondary.pct_meeting_ba_quality_bar","topline":true}]}},{"data":{"id":"staff_roster","type":"view","status":"blocked","domain":"Staff","sub_done":0,"sub_total":0,"subtasks":[],"blocking_measures":[{"name":"staff.pct_retention_weekly","topline":true},{"name":"staff.headcount ","topline":false},{"name":"staff.avg_base_compensation","topline":false},{"name":"staff.avg_additional_earnings ","topline":false},{"name":"staff.pct_managers ","topline":false},{"name":"staff.salary_change","topline":false},{"name":"staff.pct_attrition_foundation ","topline":false},{"name":"staff.pct_attrition_nj_compliance ","topline":false},{"name":"staff.pct_attrition_recruitment ","topline":false},{"name":"staff.pct_attrition_resignations ","topline":false},{"name":"staff.pct_attrition_terminations ","topline":false},{"name":"staff.pct_attrition_other ","topline":false}]}},{"data":{"id":"staff_demographic_explorer","type":"view","status":"blocked","domain":"Staff","sub_done":0,"sub_total":0,"subtasks":[],"blocking_measures":[{"name":"staff.pct_retention_weekly","topline":true},{"name":"staff.headcount ","topline":false},{"name":"staff.avg_base_compensation","topline":false},{"name":"staff.avg_additional_earnings ","topline":false},{"name":"staff.pct_managers ","topline":false},{"name":"staff.salary_change","topline":false},{"name":"staff.pct_attrition_foundation ","topline":false},{"name":"staff.pct_attrition_nj_compliance ","topline":false},{"name":"staff.pct_attrition_recruitment ","topline":false},{"name":"staff.pct_attrition_resignations ","topline":false},{"name":"staff.pct_attrition_terminations ","topline":false},{"name":"staff.pct_attrition_other ","topline":false}]}},{"data":{"id":"renewal_approval_tool","type":"view","status":"blocked","domain":"Staff","sub_done":0,"sub_total":0,"subtasks":[],"blocking_measures":[{"name":"staff.pct_retention_weekly","topline":true},{"name":"staff.headcount ","topline":false},{"name":"staff.avg_base_compensation","topline":false},{"name":"staff.avg_additional_earnings ","topline":false},{"name":"staff.pct_managers ","topline":false},{"name":"staff.salary_change","topline":false},{"name":"staff.pct_attrition_foundation ","topline":false},{"name":"staff.pct_attrition_nj_compliance ","topline":false},{"name":"staff.pct_attrition_recruitment ","topline":false},{"name":"staff.pct_attrition_resignations ","topline":false},{"name":"staff.pct_attrition_terminations ","topline":false},{"name":"staff.pct_attrition_other ","topline":false}]}},{"data":{"id":"attrition_dashboard","type":"view","status":"blocked","domain":"Staff","sub_done":0,"sub_total":0,"subtasks":[],"blocking_measures":[{"name":"staff.pct_retention_weekly","topline":true},{"name":"staff.headcount ","topline":false},{"name":"staff.avg_base_compensation","topline":false},{"name":"staff.avg_additional_earnings ","topline":false},{"name":"staff.pct_managers ","topline":false},{"name":"staff.salary_change","topline":false},{"name":"staff.pct_attrition_foundation ","topline":false},{"name":"staff.pct_attrition_nj_compliance ","topline":false},{"name":"staff.pct_attrition_recruitment ","topline":false},{"name":"staff.pct_attrition_resignations ","topline":false},{"name":"staff.pct_attrition_terminations ","topline":false},{"name":"staff.pct_attrition_other ","topline":false}]}},{"data":{"id":"finance_dashboard","type":"view","status":"blocked","domain":"Staff","sub_done":0,"sub_total":0,"subtasks":[],"blocking_measures":[{"name":"staff.pct_retention_weekly","topline":true},{"name":"staff.headcount ","topline":false},{"name":"staff.avg_base_compensation","topline":false},{"name":"staff.avg_additional_earnings ","topline":false},{"name":"staff.pct_managers ","topline":false},{"name":"staff.salary_change","topline":false},{"name":"staff.pct_attrition_foundation ","topline":false},{"name":"staff.pct_attrition_nj_compliance ","topline":false},{"name":"staff.pct_attrition_recruitment ","topline":false},{"name":"staff.pct_attrition_resignations ","topline":false},{"name":"staff.pct_attrition_terminations ","topline":false},{"name":"staff.pct_attrition_other ","topline":false}]}},{"data":{"id":"cube: Recruitment Dashboard","type":"view","status":"blocked","domain":"Talent Acquisition","sub_done":0,"sub_total":24,"subtasks":[{"name":"# Applications","done":false},{"name":"# Hires","done":false},{"name":"# Offers","done":false},{"name":"# Phone Screens Requested","done":false},{"name":"# Phone Screens Completed","done":false},{"name":"# Demos","done":false},{"name":"% to Hired","done":false},{"name":"Average Resume Score","done":false},{"name":"Average Phone Interview Score","done":false},{"name":"# Mid Year Hires","done":false},{"name":"Average Days to Review","done":false},{"name":"Average Days Since Update","done":false},{"name":"% Apps Without Update 7+ Days","done":false},{"name":"# New Hires","done":false},{"name":"% High Rated Without Update","done":false},{"name":"Average Days to Hire","done":false},{"name":"# Applications Reviewed Within 1 week","done":false},{"name":"% Applications Reviewed Within 1 week","done":false},{"name":"# Weeks Meeting 90% Reviewed Within Week Goal","done":false},{"name":"% Weeks Meeting 90% Reviewed Within Week Goal","done":false},{"name":"# Open Seats","done":false},{"name":"# Staffed Seats","done":false},{"name":"# Active Seats","done":false},{"name":"% Staffed","done":false}],"blocking_measures":[{"name":"talent.pct_staffed","topline":true}]}},{"data":{"id":"Coaching Conversation Tool","type":"view","status":"blocked","domain":"Staff Observations","sub_done":0,"sub_total":0,"subtasks":[],"blocking_measures":[{"name":"staff_observations.pct_assigned_microgoals","topline":true}]}},{"data":{"id":"Miami Instructional Rubrics","type":"view","status":"blocked","domain":"Staff Observations","sub_done":0,"sub_total":0,"subtasks":[],"blocking_measures":[{"name":"staff_observations.pct_assigned_microgoals","topline":true}]}},{"data":{"id":"Teacher Development Dashboard","type":"view","status":"blocked","domain":"Staff Observations","sub_done":0,"sub_total":0,"subtasks":[],"blocking_measures":[{"name":"staff_observations.pct_assigned_microgoals","topline":true}]}},{"data":{"id":"SchoolMint Grow Dashboard","type":"view","status":"blocked","domain":"Staff Observations","sub_done":0,"sub_total":23,"subtasks":[{"name":"% Teachers with Microgoals","done":false},{"name":"% Evaluated (Observed/Eligible)","done":false},{"name":"% Complete ","done":false},{"name":"# Eligible Participants (per term)","done":false},{"name":"# Participants Observed","done":false},{"name":"# Microgoals Assigned","done":false},{"name":"# Distinct Microgoals","done":false},{"name":"# Eligible Teachers","done":false},{"name":"Avg Overall Score","done":false},{"name":"# Teachers with Microgoals","done":false},{"name":"Avg Observation Score","done":false},{"name":"Avg Row Score","done":false},{"name":"Avg Row Score","done":false},{"name":"Average Indicator Score (Rows)","done":false},{"name":"Average Final Tier","done":false},{"name":"Average Final Score","done":false},{"name":"Average Self and Others Score","done":false},{"name":"Avg Goals Met","done":false},{"name":"Average ETR Score","done":false},{"name":"Average Observation Score","done":false},{"name":"% Completed Observations","done":false},{"name":"# Teachers with Observations","done":false},{"name":"# Microgoals Assigned","done":false}],"blocking_measures":[{"name":"staff_observations.pct_assigned_microgoals","topline":true}]}},{"data":{"id":"cube: Zendesk Reporting","type":"view","status":"blocked","domain":"Staff Support","sub_done":0,"sub_total":4,"subtasks":[{"name":"# Tickets","done":false},{"name":"# Days from Ticket Creation","done":false},{"name":"Avg 1 Reply in Business Hours","done":false},{"name":"Avg Solved in Business Days","done":false}],"blocking_measures":[]}},{"data":{"id":"cube: FRESH Dashboard","type":"view","status":"blocked","domain":"Student Recruitment & Enrollment","sub_done":0,"sub_total":0,"subtasks":[],"blocking_measures":[]}},{"data":{"id":"cube: Stipend and Bonus Dashboard","type":"view","status":"blocked","domain":"Stipends and Cert","sub_done":0,"sub_total":4,"subtasks":[{"name":"Sum Amount","done":false},{"name":"%/# in each Approval Status","done":false},{"name":"# Teammates with Stipends","done":false},{"name":"# Stipends","done":false}],"blocking_measures":[]}},{"data":{"id":"cube: NJ Certification Dashboard (Schools View)","type":"view","status":"blocked","domain":"Stipends and Cert","sub_done":0,"sub_total":8,"subtasks":[{"name":"# Needing Pension Switch","done":false},{"name":"# Praxis Intensive Attendance","done":false},{"name":"# Cert Manager Meetings","done":false},{"name":"# Test Attempts","done":false},{"name":"# Test Effort","done":false},{"name":"% Likelihood Tier to be Certified","done":false},{"name":"% Teachers Off Track for Renewal","done":false},{"name":"% Uncertified Teachers","done":false}],"blocking_measures":[]}}];
+const STATS        = {"models_done":0,"models_total":67,"measures_done":0,"measures_total":48,"topline_done":0,"topline_total":37,"views_done":0,"views_total":33,"all_models_complete":false,"all_measures_complete":false};
+const LAST_UPDATED = "April 16, 2026 at 3:43 PM";
 
 // ── Parse ──────────────────────────────────────────────────────────────────
-const nodes   = ELEMENTS.filter(e => e.data && !e.data.source);
-const edges   = ELEMENTS.filter(e => e.data && e.data.source);
+const nodes   = ELEMENTS.filter(e => e.data);
 const nodeMap = Object.fromEntries(nodes.map(n => [n.data.id, n.data]));
 
-const dims  = nodes.filter(n => n.data.type === 'dim') .sort((a,b) => a.data.id.localeCompare(b.data.id));
-const fcts  = nodes.filter(n => n.data.type === 'fct') .sort((a,b) => a.data.id.localeCompare(b.data.id));
-const cubes = nodes.filter(n => n.data.type === 'cube').sort((a,b) => a.data.id.localeCompare(b.data.id));
-
-// Build cube → deps lookup
-const cubeDeps = {};
-cubes.forEach(c => { cubeDeps[c.data.id] = []; });
-edges.forEach(e => {
-  const { source, target } = e.data;
-  if (cubeDeps[target] !== undefined) {
-    const dep = nodeMap[source];
-    if (dep) cubeDeps[target].push(dep);
-  }
-});
+const models   = nodes.filter(n => n.data.type === 'model');
+const measures = nodes.filter(n => n.data.type === 'measure');
+const views    = nodes.filter(n => n.data.type === 'view');
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function pct(done, total) { return total ? Math.round(done / total * 100) : 0; }
-function stripCube(name)  { return name.replace(/^cube:\s*/i, ''); }
 
-// ── Sort lists ─────────────────────────────────────────────────────────────
-// dims / facts: done first, then pending (alpha within each group)
-function doneFirst(a, b) {
-  const ak = a.data.status === 'complete' ? 0 : 1;
-  const bk = b.data.status === 'complete' ? 0 : 1;
-  return ak !== bk ? ak - bk : a.data.id.localeCompare(b.data.id);
+function groupByDomain(items) {
+  const out = {};
+  items.forEach(n => {
+    const d = n.data.domain || 'Other';
+    if (!out[d]) out[d] = [];
+    out[d].push(n);
+  });
+  return out;
 }
-dims.sort(doneFirst);
-fcts.sort(doneFirst);
-// cubes: done → ready (deps satisfied) → blocked
-function cubeOrder(c) {
-  if (c.data.status === 'complete') return 0;
-  const deps = cubeDeps[c.data.id] || [];
-  return deps.every(d => d.status === 'complete') ? 1 : 2;
-}
-cubes.sort((a, b) => {
-  const ak = cubeOrder(a), bk = cubeOrder(b);
-  return ak !== bk ? ak - bk : stripCube(a.data.id).localeCompare(stripCube(b.data.id));
-});
+
 function progBar(done, total, color) {
   return `<div class="prog-track"><div class="prog-fill" style="width:${pct(done,total)}%;background:${color}"></div></div>`;
 }
 
-
-// ── Status strip ───────────────────────────────────────────────────────────
-const doneCubes    = cubes.filter(c => c.data.status === 'complete');
-const readyBICount = cubes.reduce((sum, c) => sum + (c.data.sub_done || 0), 0);
-const totalMetrics  = cubes.reduce((sum, c) => sum + (c.data.sub_total || 0), 0);
-const blockedCubes = cubes.filter(c => {
-  const deps = cubeDeps[c.data.id] || [];
-  return c.data.status !== 'complete' && deps.some(d => d.status !== 'complete');
-});
-const readyCubes   = cubes.filter(c => {
-  const deps = cubeDeps[c.data.id] || [];
-  return c.data.status !== 'complete' && deps.every(d => d.status === 'complete');
-});
-// ── Status strip — counts by individual metric subtask ─────────────────────
-// A metric is blocked if its parent cube has any pending dep;
-// ready for Cube if parent cube deps are all satisfied (cube not yet complete);
-// ready for BI if the subtask itself is done.
-let metricsBlocked = 0, metricsReadyCube = 0;
-cubes.forEach(c => {
-  const d    = c.data;
-  if (d.status === 'complete') return;
-  const deps = cubeDeps[d.id] || [];
-  const isBlocked = deps.some(dep => dep.status !== 'complete');
-  const pending   = (d.sub_total || 0) - (d.sub_done || 0);
-  if (isBlocked) { metricsBlocked   += pending; }
-  else           { metricsReadyCube += pending; }
-});
-
-document.getElementById('status-inner').innerHTML = `
-  <span class="status-eyebrow">Metrics Progress</span>
-  <div class="status-divider"></div>
-  <div class="status-block">
-    <span class="status-num sn-blocked">${metricsBlocked}</span>
-    <span class="status-lbl">Blocked</span>
-  </div>
-  <div class="status-divider"></div>
-  <div class="status-block">
-    <span class="status-num sn-ready">${metricsReadyCube}</span>
-    <span class="status-lbl">Ready for Cube</span>
-  </div>
-  <div class="status-divider"></div>
-  <div class="status-block">
-    <span class="status-num sn-bi">${readyBICount}</span>
-    <span class="status-lbl">Ready for BI</span>
-  </div>
+// ── Header stat chips ──────────────────────────────────────────────────────
+document.getElementById('hdr-stats').innerHTML = `
+  <span class="chip c-blue">Models ${pct(STATS.models_done, STATS.models_total)}%</span>
+  <span class="chip c-orange">Measures ${pct(STATS.measures_done, STATS.measures_total)}%</span>
+  <span class="chip c-muted">Topline ${pct(STATS.topline_done, STATS.topline_total)}%</span>
 `;
 
-// ── Summary cards (hero right) ─────────────────────────────────────────────
-const modelsDone  = STATS.dims_done + STATS.fcts_done;
-const modelsTotal = STATS.dims_total + STATS.fcts_total;
-const modelsPct   = pct(modelsDone, modelsTotal);
-const metricsPct  = pct(readyBICount, totalMetrics);
+// ── Summary cards ──────────────────────────────────────────────────────────
+const modelsPct   = pct(STATS.models_done,   STATS.models_total);
+const measuresPct = pct(STATS.measures_done, STATS.measures_total);
+const toplinePct  = pct(STATS.topline_done,  STATS.topline_total);
+
 document.getElementById('summary-cards').innerHTML = `
   <div class="summary-card">
     <div class="sc-pct">${modelsPct}%</div>
     <div class="sc-label">Models</div>
-    <div class="sc-sub">${modelsDone}/${modelsTotal} tasks complete</div>
+    <div class="sc-sub">${STATS.models_done}/${STATS.models_total} complete</div>
     <div class="sc-track"><div class="sc-fill" style="width:${modelsPct}%;background:#57C0E9"></div></div>
   </div>
   <div class="summary-card">
-    <div class="sc-pct">${metricsPct}%</div>
-    <div class="sc-label">Metrics</div>
-    <div class="sc-sub">${readyBICount}/${totalMetrics} ready for BI</div>
-    <div class="sc-track"><div class="sc-fill" style="width:${metricsPct}%;background:#8b5cf6"></div></div>
+    <div class="sc-pct">${measuresPct}%</div>
+    <div class="sc-label">Measures</div>
+    <div class="sc-sub">${STATS.measures_done}/${STATS.measures_total} complete</div>
+    <div class="sc-track"><div class="sc-fill" style="width:${measuresPct}%;background:#F9A21A"></div></div>
+  </div>
+  <div class="summary-card">
+    <div class="sc-pct">${toplinePct}%</div>
+    <div class="sc-label">Topline</div>
+    <div class="sc-sub">${STATS.topline_done}/${STATS.topline_total} complete</div>
+    <div class="sc-track"><div class="sc-fill" style="width:${toplinePct}%;background:#8b5cf6"></div></div>
   </div>
 `;
 
-// ── Progress columns ───────────────────────────────────────────────────────
-function renderPcol(id, typeLabel, typeClass, color, items, getAside, subtitle, getBadge) {
+// ── Pipeline stats ─────────────────────────────────────────────────────────
+const measuresBlockedCount = measures.filter(n => n.data.status === 'blocked').length;
+const measuresPendingCount = measures.filter(n => n.data.status === 'ready').length;
+
+document.getElementById('pipe-stat-source').textContent =
+  `${STATS.views_total} dashboards`;
+
+document.getElementById('pipe-stat-schema').textContent =
+  `${STATS.models_done}/${STATS.models_total} done`;
+
+document.getElementById('pipe-stat-cube').textContent =
+  `${STATS.measures_done}/${STATS.measures_total} done`;
+
+{
+  let metricHtml = '';
+  if (measuresBlockedCount > 0) {
+    metricHtml += `<span class="pipe-stat-chip psc-blocked">${measuresBlockedCount} blocked</span>`;
+  }
+  if (measuresPendingCount > 0) {
+    metricHtml += `<span class="pipe-stat-chip psc-pending">${measuresPendingCount} pending</span>`;
+  }
+  if (!metricHtml) {
+    metricHtml = `<span class="pipe-stat-chip psc-done">all done</span>`;
+  }
+  document.getElementById('pipe-stat-metric').innerHTML = metricHtml;
+}
+
+document.getElementById('pipe-stat-bi').textContent =
+  `${STATS.views_done}/${STATS.views_total} ready`;
+
+// ── Progress column renderer (with domain grouping) ────────────────────────
+function renderPcol(id, typeLabel, typeClass, color, items, opts) {
+  opts = opts || {};
   const done  = items.filter(n => n.data.status === 'complete').length;
   const total = items.length;
-  const rows  = items.map(n => {
-    const d     = n.data;
-    const ok    = d.status === 'complete';
-    const aside = getAside ? getAside(d) : '';
-    const badge = getBadge ? getBadge(d)
-      : `<span class="il-badge ${ok ? 'ilb-done' : 'ilb-pending'}">${ok ? 'done' : 'pending'}</span>`;
-    return `<li class="il-row ${ok ? '' : 'is-pending'}">
-      <span class="il-dot ${ok ? 'il-dot-done' : 'il-dot-pending'}"></span>
-      <span class="il-name" title="${d.id}">${stripCube(d.id)}</span>
-      <span class="il-aside">
-        ${aside}
-        ${badge}
-      </span>
-    </li>`;
+
+  const groups  = groupByDomain(items);
+  const domains = Object.keys(groups).sort();
+
+  const rows = domains.map((domain, di) => {
+    let domItems = [...groups[domain]];
+
+    if (opts.toplineFirst) {
+      // topline first, then alpha; within topline: done first
+      domItems.sort((a, b) => {
+        const at = a.data.is_topline ? 0 : 1;
+        const bt = b.data.is_topline ? 0 : 1;
+        if (at !== bt) return at - bt;
+        const ak = a.data.status === 'complete' ? 0 : 1;
+        const bk = b.data.status === 'complete' ? 0 : 1;
+        return ak !== bk ? ak - bk : a.data.id.localeCompare(b.data.id);
+      });
+    } else {
+      // done first, then alpha
+      domItems.sort((a, b) => {
+        const ak = a.data.status === 'complete' ? 0 : 1;
+        const bk = b.data.status === 'complete' ? 0 : 1;
+        return ak !== bk ? ak - bk : a.data.id.localeCompare(b.data.id);
+      });
+    }
+
+    const divClass = di === 0 ? 'domain-div' : 'domain-div';
+    const itemRows = domItems.map(n => {
+      const d   = n.data;
+      const ok  = d.status === 'complete';
+
+      let badge;
+      if (opts.getBadge) {
+        badge = opts.getBadge(d);
+      } else {
+        const cls = ok ? 'ilb-done' : (d.status === 'blocked' ? 'ilb-blocked' : (d.status === 'ready' ? 'ilb-ready' : 'ilb-pending'));
+        const lbl = ok ? 'done' : (d.status === 'blocked' ? 'blocked' : (d.status === 'ready' ? 'ready' : 'pending'));
+        badge = `<span class="il-badge ${cls}">${lbl}</span>`;
+      }
+
+      const toplineHtml = d.is_topline ? '<span class="il-topline">&#9733; topline</span>' : '';
+      const clickCls    = opts.clickable ? ' il-row-click' : '';
+      const dataAttr    = opts.clickable ? ` data-id="${d.id.replace(/"/g, '&quot;')}"` : '';
+
+      return `<li class="il-row${clickCls} ${ok ? '' : 'is-pending'}"${dataAttr}>
+        <span class="il-dot ${ok ? 'il-dot-done' : 'il-dot-pending'}"></span>
+        <span class="il-name" title="${d.id}">${d.id}</span>
+        <span class="il-aside">${toplineHtml}${badge}</span>
+      </li>`;
+    }).join('');
+
+    return `<li class="${divClass}">${domain}</li>${itemRows}`;
   }).join('');
+
   document.getElementById(id).innerHTML = `
     <div class="pcol-head">
-      <div class="pcol-type ${typeClass}">${typeLabel}${subtitle ? `<span class="pcol-subtitle">${subtitle}</span>` : ''}</div>
+      <div class="pcol-type ${typeClass}">${typeLabel}</div>
       <div class="pcol-score">${done}<span class="pcol-score-denom">/${total}</span></div>
       ${progBar(done, total, color)}
     </div>
@@ -701,98 +927,102 @@ function renderPcol(id, typeLabel, typeClass, color, items, getAside, subtitle, 
   `;
 }
 
-renderPcol('pcol-dims', 'Dimensions', 'pt-dim', '#57C0E9', dims, null);
-renderPcol('pcol-fcts', 'Facts',      'pt-fct', '#F9A21A', fcts, null);
-renderPcol('pcol-cubes', 'Tableau Dashboards', 'pt-cube', '#b45309', cubes, d => {
-  return d.sub_total > 0
-    ? `<span class="il-meta">${d.sub_done}/${d.sub_total}</span>` : '';
-}, 'click to filter below', d => {
-  if (d.status === 'complete') return `<span class="il-badge ilb-done">done</span>`;
-  const deps = cubeDeps[d.id] || [];
-  return deps.some(dep => dep.status !== 'complete')
-    ? `<span class="il-badge ilb-blocked">blocked</span>`
-    : `<span class="il-badge ilb-ready">ready</span>`;
+renderPcol('pcol-models', 'Models', 'pt-model', '#57C0E9', models, {});
+
+renderPcol('pcol-measures', 'Measures', 'pt-measure', '#F9A21A', measures, {
+  toplineFirst: true,
 });
 
-// ── Cube detail cards ──────────────────────────────────────────────────────
-const cubeCardsHtml = cubes.map(c => {
-  const d        = c.data;
-  const deps     = cubeDeps[d.id] || [];
-  const pendDeps = deps.filter(dep => dep.status !== 'complete');
-  const doneDeps = deps.filter(dep => dep.status === 'complete');
+renderPcol('pcol-views', 'Views', 'pt-view', '#001E62', views, {
+  clickable: true,
+  getBadge: d => {
+    if (d.status === 'complete') return `<span class="il-badge ilb-done">done</span>`;
+    if (d.status === 'blocked')  return `<span class="il-badge ilb-blocked">blocked</span>`;
+    return `<span class="il-badge ilb-ready">ready</span>`;
+  },
+});
 
-  // Card state
+// ── View detail cards ──────────────────────────────────────────────────────
+// Sort: done → ready → blocked
+const sortedViews = [...views].sort((a, b) => {
+  const order = {complete: 0, ready: 1, blocked: 2};
+  const ak = order[a.data.status] ?? 3, bk = order[b.data.status] ?? 3;
+  return ak !== bk ? ak - bk : a.data.id.localeCompare(b.data.id);
+});
+
+const viewCardsHtml = sortedViews.map(v => {
+  const d = v.data;
+
   let cardCls, statusHtml, stateKey;
   if (d.status === 'complete') {
     stateKey   = 'done';
     cardCls    = 'cube-card cc-done';
     statusHtml = '<span class="chip c-green">&#10003; complete</span>';
-  } else if (pendDeps.length > 0) {
+  } else if (d.status === 'blocked') {
     stateKey   = 'blocked';
+    const bc   = (d.blocking_measures || []).length;
     cardCls    = 'cube-card cc-blocked';
-    statusHtml = `<span class="chip c-red">&#9650; ${pendDeps.length} blocked</span>`;
+    statusHtml = `<span class="chip c-red">&#9650; ${bc ? bc + ' pending' : 'blocked'}</span>`;
   } else {
     stateKey   = 'ready';
     cardCls    = 'cube-card cc-ready';
     statusHtml = '<span class="chip c-gold">ready</span>';
   }
-  const safeId = d.id.replace(/"/g, '&quot;');
 
-  // Subtask metrics
-  let metricsHtml = '';
+  // Subtasks section
+  let subtasksHtml = '';
   if (d.sub_total > 0) {
-    const mp = pct(d.sub_done, d.sub_total);
+    const mp      = pct(d.sub_done, d.sub_total);
     const subRows = d.subtasks.map(s => `
       <li class="cc-sub-row ${s.done ? 'cc-sub-done' : 'cc-sub-pending'}">
         <span class="cc-sub-dot"></span>
         <span class="cc-sub-name">${s.name}</span>
       </li>`).join('');
-    metricsHtml = `
+    subtasksHtml = `
       <div class="cc-metrics">
         <div class="cc-metrics-header">
           <span class="cc-metrics-label">Metrics</span>
-          <span class="cc-metrics-count">${d.sub_done}/${d.sub_total} done (${mp}%)</span>
+          <span class="cc-metrics-count">${d.sub_done}/${d.sub_total} (${mp}%)</span>
         </div>
         <div class="cc-track"><div class="cc-fill" style="width:${mp}%;background:#b45309"></div></div>
         <ul class="cc-sub-list">${subRows}</ul>
       </div>`;
   }
 
-  // Dependencies
-  let depsHtml;
-  if (deps.length > 0) {
-    const sorted   = [...pendDeps, ...doneDeps];
-    const depLabel = pendDeps.length > 0
-      ? `Required models — ${pendDeps.length} still pending`
-      : `Required models — all complete`;
-    const depRows  = sorted.map(dep => {
-      const ok = dep.status === 'complete';
-      return `<li class="cc-dep ${ok ? 'dep-done' : 'dep-pending'}">
+  // Blocking measures section
+  let blockersHtml;
+  const blocking = d.blocking_measures || [];
+  if (d.status === 'complete' || STATS.all_measures_complete) {
+    blockersHtml = `<div class="cc-deps"><p class="cc-no-deps" style="color:#166534;font-style:normal">&#10003; All measures complete</p></div>`;
+  } else if (blocking.length === 0) {
+    blockersHtml = `<div class="cc-deps"><p class="cc-no-deps">No pending measures in this domain. Waiting on measures in other domains.</p></div>`;
+  } else {
+    const depRows = blocking.map(m => `
+      <li class="cc-dep dep-pending">
         <span class="cc-dep-indicator"></span>
-        <span class="cc-dep-name">${dep.id}</span>
-        <span class="cc-dep-type">${dep.type}</span>
-      </li>`;
-    }).join('');
-    depsHtml = `<div class="cc-deps">
-      <div class="cc-deps-label">${depLabel}</div>
+        <span class="cc-dep-name">${m.name}</span>
+        ${m.topline ? '<span class="cc-dep-type">&#9733; topline</span>' : ''}
+      </li>`).join('');
+    blockersHtml = `<div class="cc-deps">
+      <div class="cc-deps-label">Pending measures &mdash; ${blocking.length} remaining in domain</div>
       <ul class="cc-dep-list">${depRows}</ul>
     </div>`;
-  } else {
-    depsHtml = `<div class="cc-deps"><p class="cc-no-deps">No model dependencies tracked in Asana.</p></div>`;
   }
 
+  const safeId = d.id.replace(/"/g, '&quot;');
   return `<div class="${cardCls}" data-name="${safeId}" data-state="${stateKey}">
     <div class="cc-top">
-      <div class="cc-name">${stripCube(d.id)}</div>
+      <div class="cc-name">${d.id}</div>
       <div class="cc-status">${statusHtml}</div>
     </div>
-    ${metricsHtml}
-    ${depsHtml}
+    <div><span class="cc-domain">${d.domain}</span></div>
+    ${subtasksHtml}
+    ${blockersHtml}
   </div>`;
 }).join('');
 
-document.getElementById('cube-grid').innerHTML = cubeCardsHtml
-  || '<p style="color:var(--g3);font-family:var(--ff-mono);font-size:0.75rem">No cube metrics found.</p>';
+document.getElementById('cube-grid').innerHTML = viewCardsHtml
+  || '<p style="color:var(--g3);font-family:var(--ff-mono);font-size:0.75rem">No view tasks found.</p>';
 
 // ── Filter & multiselect ───────────────────────────────────────────────────
 const selectedIds = new Set();
@@ -800,7 +1030,7 @@ const selectedIds = new Set();
 function applyFilter() {
   const query  = document.getElementById('cube-search').value.toLowerCase().trim();
   const status = document.querySelector('#filter-chips .fchip.fc-active').dataset.status;
-  const total  = cubes.length;
+  const total  = views.length;
   let shown    = 0;
 
   document.querySelectorAll('#cube-grid .cube-card').forEach(card => {
@@ -825,40 +1055,35 @@ function applyFilter() {
   document.getElementById('filter-clear').style.display = hasClear ? '' : 'none';
 }
 
-// Status chip buttons
 document.querySelectorAll('#filter-chips .fchip').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('#filter-chips .fchip').forEach(b => b.classList.remove('fc-active'));
     btn.classList.add('fc-active');
-    // Clicking a status filter clears list-click selection
     selectedIds.clear();
-    document.querySelectorAll('#pcol-cubes .il-row-click').forEach(r => r.classList.remove('il-selected'));
+    document.querySelectorAll('#pcol-views .il-row-click').forEach(r => r.classList.remove('il-selected'));
     applyFilter();
   });
 });
 
-// Search input
 document.getElementById('cube-search').addEventListener('input', () => {
   selectedIds.clear();
-  document.querySelectorAll('#pcol-cubes .il-row-click').forEach(r => r.classList.remove('il-selected'));
+  document.querySelectorAll('#pcol-views .il-row-click').forEach(r => r.classList.remove('il-selected'));
   applyFilter();
 });
 
-// Clear button
 document.getElementById('filter-clear').addEventListener('click', () => {
   selectedIds.clear();
   document.getElementById('cube-search').value = '';
-  document.querySelectorAll('#pcol-cubes .il-row-click').forEach(r => r.classList.remove('il-selected'));
+  document.querySelectorAll('#pcol-views .il-row-click').forEach(r => r.classList.remove('il-selected'));
   document.querySelectorAll('#filter-chips .fchip').forEach(b => b.classList.remove('fc-active'));
   document.querySelector('#filter-chips .fchip[data-status="all"]').classList.add('fc-active');
   applyFilter();
 });
 
-// Click-to-filter on cube progress list items
-document.querySelectorAll('#pcol-cubes .il-row').forEach(row => {
-  const name = row.querySelector('.il-name')?.getAttribute('title');
+// Click-to-filter on views progress list
+document.querySelectorAll('#pcol-views .il-row-click').forEach(row => {
+  const name = row.dataset.id;
   if (!name) return;
-  row.classList.add('il-row-click');
   row.title = 'Click to filter';
   row.addEventListener('click', () => {
     if (selectedIds.has(name)) {
@@ -867,7 +1092,6 @@ document.querySelectorAll('#pcol-cubes .il-row').forEach(row => {
     } else {
       selectedIds.add(name);
       row.classList.add('il-selected');
-      // Reset status chips to "All" so selection takes precedence
       document.querySelectorAll('#filter-chips .fchip').forEach(b => b.classList.remove('fc-active'));
       document.querySelector('#filter-chips .fchip[data-status="all"]').classList.add('fc-active');
     }
@@ -878,7 +1102,6 @@ document.querySelectorAll('#pcol-cubes .il-row').forEach(row => {
   });
 });
 
-// Init count
 applyFilter();
 
 // ── Scroll reveal ──────────────────────────────────────────────────────────
@@ -886,6 +1109,51 @@ const revObs = new IntersectionObserver(entries => {
   entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('on'); });
 }, { threshold: 0.05 });
 document.querySelectorAll('.rev').forEach(el => revObs.observe(el));
+
+// ── Glossary drawer ────────────────────────────────────────────────────────
+(function () {
+  const drawer   = document.getElementById('glossary-drawer');
+  const overlay  = document.getElementById('glossary-overlay');
+  const openBtn  = document.getElementById('glossary-open-btn');
+  const closeBtn = document.getElementById('glossary-close-btn');
+
+  function openDrawer() {
+    drawer.classList.add('gd-open');
+    overlay.classList.add('gd-open');
+    document.body.classList.add('gd-lock');
+    drawer.setAttribute('aria-hidden', 'false');
+    closeBtn.focus();
+  }
+
+  function closeDrawer() {
+    drawer.classList.remove('gd-open');
+    overlay.classList.remove('gd-open');
+    document.body.classList.remove('gd-lock');
+    drawer.setAttribute('aria-hidden', 'true');
+    openBtn.focus();
+  }
+
+  openBtn.addEventListener('click', openDrawer);
+  closeBtn.addEventListener('click', closeDrawer);
+  overlay.addEventListener('click', closeDrawer);
+
+  document.addEventListener('keydown', function (e) {
+    if (!drawer.classList.contains('gd-open')) return;
+    if (e.key === 'Escape') { closeDrawer(); return; }
+    if (e.key === 'Tab') {
+      const focusable = Array.from(drawer.querySelectorAll(
+        'button, [href], input, select, [tabindex]:not([tabindex="-1"])'
+      ));
+      if (!focusable.length) return;
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
+    }
+  });
+})();
 </script>
 </body>
 </html>
