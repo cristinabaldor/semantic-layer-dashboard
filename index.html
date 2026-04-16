@@ -337,6 +337,17 @@ header {
   border-bottom: 1px solid var(--g2);
 }
 .cube-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+.domain-group-header {
+  font-family: var(--ff-mono); font-size: 0.62rem; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--g3);
+  border-bottom: 1px solid var(--g2); padding-bottom: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+.domain-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 1rem;
@@ -833,6 +844,7 @@ document.getElementById('summary-cards').innerHTML = `
 `;
 
 // ── Pipeline stats ─────────────────────────────────────────────────────────
+const measuresDoneCount    = measures.filter(n => n.data.status === 'complete').length;
 const measuresBlockedCount = measures.filter(n => n.data.status === 'blocked').length;
 const measuresPendingCount = measures.filter(n => n.data.status === 'ready').length;
 
@@ -844,24 +856,11 @@ document.getElementById('pipe-stat-schema').innerHTML =
     ? `<span class="pipe-stat-chip psc-done">${STATS.models_done}/${STATS.models_total} done</span>`
     : `<span class="pipe-stat-chip psc-schema">${STATS.models_done}/${STATS.models_total} done</span>`;
 
-document.getElementById('pipe-stat-cube').innerHTML =
-  STATS.measures_done === STATS.measures_total
-    ? `<span class="pipe-stat-chip psc-done">${STATS.measures_done}/${STATS.measures_total} done</span>`
-    : `<span class="pipe-stat-chip psc-cube">${STATS.measures_done}/${STATS.measures_total} done</span>`;
+document.getElementById('pipe-stat-cube').textContent =
+  `${measuresDoneCount}/${measures.length} done`;
 
-{
-  let metricHtml = '';
-  if (measuresBlockedCount > 0) {
-    metricHtml += `<span class="pipe-stat-chip psc-blocked">${measuresBlockedCount} blocked</span>`;
-  }
-  if (measuresPendingCount > 0) {
-    metricHtml += `<span class="pipe-stat-chip psc-pending">${measuresPendingCount} pending</span>`;
-  }
-  if (!metricHtml) {
-    metricHtml = `<span class="pipe-stat-chip psc-done">all done</span>`;
-  }
-  document.getElementById('pipe-stat-metric').innerHTML = metricHtml;
-}
+document.getElementById('pipe-stat-metric').textContent =
+  `${measuresDoneCount}/${measures.length} done`;
 
 document.getElementById('pipe-stat-bi').innerHTML =
   STATS.views_done === STATS.views_total
@@ -952,15 +951,17 @@ renderPcol('pcol-views', 'Views', 'pt-view', '#57C0E9', views, {
   },
 });
 
-// ── View detail cards ──────────────────────────────────────────────────────
-// Sort: done → ready → blocked
+// ── View detail cards (grouped by domain) ─────────────────────────────────
+// Sort within each domain: done → ready → blocked, then alpha
 const sortedViews = [...views].sort((a, b) => {
+  const da = a.data.domain || 'Other', db = b.data.domain || 'Other';
+  if (da !== db) return da.localeCompare(db);
   const order = {complete: 0, ready: 1, blocked: 2};
   const ak = order[a.data.status] ?? 3, bk = order[b.data.status] ?? 3;
   return ak !== bk ? ak - bk : a.data.id.localeCompare(b.data.id);
 });
 
-const viewCardsHtml = sortedViews.map(v => {
+function buildViewCard(v) {
   const d = v.data;
 
   let cardCls, statusHtml, stateKey;
@@ -979,7 +980,6 @@ const viewCardsHtml = sortedViews.map(v => {
     statusHtml = '<span class="chip c-gold">ready</span>';
   }
 
-  // Subtasks section
   let subtasksHtml = '';
   if (d.sub_total > 0) {
     const mp      = pct(d.sub_done, d.sub_total);
@@ -999,7 +999,6 @@ const viewCardsHtml = sortedViews.map(v => {
       </div>`;
   }
 
-  // Blocking measures section
   let blockersHtml;
   const blocking = d.blocking_measures || [];
   if (d.status === 'complete' || STATS.all_measures_complete) {
@@ -1025,9 +1024,25 @@ const viewCardsHtml = sortedViews.map(v => {
       <div class="cc-name">${d.id}</div>
       <div class="cc-status">${statusHtml}</div>
     </div>
-    <div><span class="cc-domain">${d.domain}</span></div>
     ${subtasksHtml}
     ${blockersHtml}
+  </div>`;
+}
+
+// Group by domain
+const viewDomainGroups = {};
+sortedViews.forEach(v => {
+  const domain = v.data.domain || 'Other';
+  if (!viewDomainGroups[domain]) viewDomainGroups[domain] = [];
+  viewDomainGroups[domain].push(v);
+});
+
+const viewCardsHtml = Object.keys(viewDomainGroups).sort().map(domain => {
+  const safeDomain = domain.replace(/"/g, '&quot;');
+  const cards = viewDomainGroups[domain].map(buildViewCard).join('');
+  return `<div class="domain-group" data-domain="${safeDomain}">
+    <div class="domain-group-header">${domain}</div>
+    <div class="domain-cards">${cards}</div>
   </div>`;
 }).join('');
 
@@ -1056,6 +1071,12 @@ function applyFilter() {
     }
     card.style.display = visible ? '' : 'none';
     if (visible) shown++;
+  });
+
+  // Hide domain groups whose cards are all hidden
+  document.querySelectorAll('#cube-grid .domain-group').forEach(group => {
+    const anyVisible = [...group.querySelectorAll('.cube-card')].some(c => c.style.display !== 'none');
+    group.style.display = anyVisible ? '' : 'none';
   });
 
   document.getElementById('filter-count').textContent =
