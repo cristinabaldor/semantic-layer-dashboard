@@ -97,6 +97,7 @@ def fetch_project_data(pat):
 
     # 2. Tasks per section (with tags)
     tasks = []
+    untyped_parents = []  # untyped tasks (e.g. dashboard) that may have measure subtasks
     for sec in sections:
         raw_tasks = list(_rate_limited(
             tasks_api.get_tasks_for_section,
@@ -107,7 +108,16 @@ def fetch_project_data(pat):
         for t in raw_tasks:
             task_type = _classify_task(t)
             if task_type is None:
-                continue  # skip untagged / subtask-style tasks
+                # Still scan for measure subtasks (e.g. dashboard container tasks)
+                untyped_parents.append({
+                    "gid":         t["gid"],
+                    "name":        t["name"],
+                    "section_gid": sec["gid"],
+                    "domain":      sec["name"],
+                    "type":        None,
+                    "subtasks":    [],
+                })
+                continue
             tag_names = {tg["name"].lower() for tg in t.get("tags", [])}
             tasks.append({
                 "gid":         t["gid"],
@@ -129,10 +139,11 @@ def fetch_project_data(pat):
     # 3. Subtasks for all tasks
     #    - Subtasks tagged 'measure' → added to tasks list as full measure tasks
     #    - Subtasks of view tasks with no type tag → view metric checklist items
+    #    - Untyped parents (e.g. dashboard tasks) also scanned for measure subtasks
     print("  Fetching subtasks...")
     measure_subs_found = 0
     view_sub_items     = 0
-    snapshot = list(tasks)  # iterate original list; measure subtasks appended below
+    snapshot = list(tasks) + untyped_parents  # include untyped parents for measure scanning
     for parent in snapshot:
         try:
             subs = list(_rate_limited(
