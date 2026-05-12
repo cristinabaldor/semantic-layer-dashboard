@@ -936,7 +936,7 @@ body.gd-lock { overflow: hidden; }
           From Dashboards<br>to <span class="hero-title-accent">Metrics</span>
         </h1>
         <p class="hero-body rev d1">
-          Tracking migration of Tableau reporting views to dimension and fact models and semantic layer metrics. Measures unlock once all models are complete; views unlock once all measures are complete.
+          Tracking migration of Tableau reporting views to dimension and fact models and semantic layer metrics. Metrics unlock once all cubes are complete; migrations unlock once all metrics are complete.
         </p>
       </div>
       <div class="hero-right rev d2" id="summary-cards"><!-- filled by JS --></div>
