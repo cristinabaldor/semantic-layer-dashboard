@@ -1267,7 +1267,7 @@ function renderPcol(id, typeLabel, typeClass, color, items, opts) {
   `;
 }
 
-renderPcol('pcol-models', 'Models', 'pt-model', '#F9A21A', models, {});
+renderPcol('pcol-models', 'Models', 'pt-model', '#F9A21A', models, { sortDomainsByDue: true });
 
 renderPcol('pcol-measures', 'Measures', 'pt-measure', '#8b5cf6', measures, {
   toplineFirst: true, sortDomainsByDue: true,
