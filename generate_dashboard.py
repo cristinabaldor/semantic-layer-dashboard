@@ -306,6 +306,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Data Marts &amp; Semantic Layer — Progress</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M10 2L17 5.5V14.5L10 18L3 14.5V5.5L10 2Z' stroke='%23001E62' stroke-width='1.4' fill='none'/%3E%3Cpath d='M10 2V18M3 5.5L17 5.5' stroke='%23001E62' stroke-width='1.4' stroke-linecap='round' opacity='0.5'/%3E%3C/svg%3E"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
@@ -354,11 +355,9 @@ header {
 }
 .brand { display: flex; align-items: center; gap: 0.7rem; }
 .brand-mark {
-  width: 30px; height: 30px; border-radius: 6px;
-  background: var(--indigo);
+  width: 30px; height: 30px;
   display: flex; align-items: center; justify-content: center;
-  font-family: var(--ff-head); font-size: 10px; font-weight: 700;
-  color: var(--white); letter-spacing: 0.06em; flex-shrink: 0;
+  color: var(--indigo); flex-shrink: 0;
 }
 .brand-name {
   font-family: var(--ff-head); font-size: 1rem; font-weight: 700;
@@ -912,7 +911,12 @@ body.gd-lock { overflow: hidden; }
 <header>
   <div class="hdr">
     <div class="brand">
-      <div class="brand-mark">DM</div>
+      <div class="brand-mark">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+          <path d="M10 2L17 5.5V14.5L10 18L3 14.5V5.5L10 2Z" stroke="currentColor" stroke-width="1.4" fill="none"/>
+          <path d="M10 2V18M3 5.5L17 5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity="0.5"/>
+        </svg>
+      </div>
       <span class="brand-name">Data Marts &amp; Semantic Layer</span>
     </div>
     <div class="hdr-right" id="hdr-stats"><!-- filled by JS --></div>
