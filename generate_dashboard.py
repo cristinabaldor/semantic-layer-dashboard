@@ -64,8 +64,10 @@ def _rate_limited(fn, *args, **kwargs):
 # ── TASK CLASSIFICATION ───────────────────────────────────────────────────────
 
 def _classify_task(task):
-    """Return 'model', 'measure', 'view', or None based on Asana task tags."""
+    """Return 'model', 'measure', 'view', 'dashboard', or None based on Asana task tags."""
     tag_names = {t["name"].lower() for t in task.get("tags", [])}
+    if "dashboard" in tag_names:
+        return "dashboard"
     if "view" in tag_names:
         return "view"
     if "measure" in tag_names:
@@ -102,7 +104,7 @@ def fetch_project_data(pat):
         raw_tasks = list(_rate_limited(
             tasks_api.get_tasks_for_section,
             sec["gid"],
-            opts={"opt_fields": "gid,name,completed,notes,tags,tags.name",
+            opts={"opt_fields": "gid,name,completed,notes,tags,tags.name,due_on",
                   "limit": 100},
         ))
         for t in raw_tasks:
@@ -128,6 +130,7 @@ def fetch_project_data(pat):
                 "domain":      sec["name"],
                 "type":        task_type,
                 "is_topline":  "topline" in tag_names,
+                "due_on":      t.get("due_on") or "",
                 "subtasks":    [],
             })
         time.sleep(0.15)
@@ -149,7 +152,7 @@ def fetch_project_data(pat):
             subs = list(_rate_limited(
                 tasks_api.get_subtasks_for_task,
                 parent["gid"],
-                opts={"opt_fields": "gid,name,completed,tags,tags.name"},
+                opts={"opt_fields": "gid,name,completed,tags,tags.name,due_on"},
             ))
             time.sleep(0.1)
         except ApiException as e:
@@ -170,6 +173,7 @@ def fetch_project_data(pat):
                     "domain":      parent["domain"],
                     "type":        "measure",
                     "is_topline":  "topline" in tag_names,
+                    "due_on":      s.get("due_on") or "",
                     "subtasks":    [],
                 })
                 measure_subs_found += 1
@@ -192,27 +196,47 @@ def build_graph(project_data):
     """Returns (elements_list, stats_dict) from fetched Asana data."""
     tasks = project_data["tasks"]
 
-    model_tasks   = [t for t in tasks if t["type"] == "model"]
-    measure_tasks = [t for t in tasks if t["type"] == "measure"]
-    view_tasks    = [t for t in tasks if t["type"] == "view"]
+    model_tasks     = [t for t in tasks if t["type"] == "model"]
+    measure_tasks   = [t for t in tasks if t["type"] == "measure"]
+    view_tasks      = [t for t in tasks if t["type"] == "view"]
+    dashboard_tasks = [t for t in tasks if t["type"] == "dashboard"]
 
     all_models_complete   = (all(t["completed"] for t in model_tasks)
                              if model_tasks else True)
     all_measures_complete = (all(t["completed"] for t in measure_tasks)
                              if measure_tasks else True)
 
-    def measure_state(t):
-        if t["completed"]: return "complete"
-        return "ready" if all_models_complete else "blocked"
+    # Per-domain completion maps — measures/views in a domain are blocked until
+    # that domain's cubes are done, then move to pending.
+    models_by_domain = {}
+    for m in model_tasks:
+        models_by_domain.setdefault(m["domain"], []).append(m)
 
-    def view_state(t):
-        if t["completed"]: return "complete"
-        return "ready" if all_measures_complete else "blocked"
-
-    # Incomplete measures grouped by domain for per-view blockers
     measures_by_domain = {}
     for m in measure_tasks:
         measures_by_domain.setdefault(m["domain"], []).append(m)
+
+    def domain_models_done(domain):
+        dm = models_by_domain.get(domain, [])
+        return all(m["completed"] for m in dm) if dm else True
+
+    def domain_measures_done(domain):
+        dm = measures_by_domain.get(domain, [])
+        return all(m["completed"] for m in dm) if dm else True
+
+    def measure_state(t):
+        if t["completed"]: return "complete"
+        return "pending" if domain_models_done(t["domain"]) else "blocked"
+
+    def view_state(t):
+        if t["completed"]: return "complete"
+        return "pending" if domain_models_done(t["domain"]) else "blocked"
+
+    def dashboard_state(t):
+        if t["completed"]: return "complete"
+        if not domain_models_done(t["domain"]):   return "blocked"
+        if not domain_measures_done(t["domain"]): return "blocked"
+        return "pending"
 
     elements = []
 
@@ -222,6 +246,7 @@ def build_graph(project_data):
             "type":   "model",
             "status": "complete" if t["completed"] else "pending",
             "domain": t["domain"],
+            "due_on": t.get("due_on", ""),
         }})
 
     for t in measure_tasks:
@@ -231,39 +256,41 @@ def build_graph(project_data):
             "status":     measure_state(t),
             "domain":     t["domain"],
             "is_topline": t["is_topline"],
+            "due_on":     t.get("due_on", ""),
             "desc":       (t["notes"] or "").split("\n")[0][:120],
         }})
 
-    for t in view_tasks:
-        subtasks  = t.get("subtasks", [])
-        sub_done  = sum(1 for s in subtasks if s["done"])
-        sub_total = len(subtasks)
-        blocking  = [
+    for t in dashboard_tasks:
+        blocking_models = [
+            m["name"]
+            for m in models_by_domain.get(t["domain"], [])
+            if not m["completed"]
+        ]
+        blocking_measures = [
             {"name": m["name"], "topline": m["is_topline"]}
             for m in measures_by_domain.get(t["domain"], [])
             if not m["completed"]
         ]
         elements.append({"data": {
             "id":                t["name"],
-            "type":              "view",
-            "status":            view_state(t),
+            "type":              "dashboard",
+            "status":            dashboard_state(t),
             "domain":            t["domain"],
-            "sub_done":          sub_done,
-            "sub_total":         sub_total,
-            "subtasks":          subtasks,
-            "blocking_measures": blocking,
+            "due_on":            t.get("due_on", ""),
+            "blocking_models":   blocking_models,
+            "blocking_measures": blocking_measures,
         }})
 
     topline = [t for t in measure_tasks if t["is_topline"]]
     stats = {
-        "models_done":            sum(1 for t in model_tasks   if t["completed"]),
+        "models_done":            sum(1 for t in model_tasks     if t["completed"]),
         "models_total":           len(model_tasks),
-        "measures_done":          sum(1 for t in measure_tasks if t["completed"]),
+        "measures_done":          sum(1 for t in measure_tasks   if t["completed"]),
         "measures_total":         len(measure_tasks),
-        "topline_done":           sum(1 for t in topline       if t["completed"]),
+        "topline_done":           sum(1 for t in topline         if t["completed"]),
         "topline_total":          len(topline),
-        "views_done":             sum(1 for t in view_tasks    if t["completed"]),
-        "views_total":            len(view_tasks),
+        "dashboards_done":        sum(1 for t in dashboard_tasks if t["completed"]),
+        "dashboards_total":       len(dashboard_tasks),
         "all_models_complete":    all_models_complete,
         "all_measures_complete":  all_measures_complete,
     }
@@ -592,17 +619,22 @@ header {
   border-radius: 3px; padding: 0.1rem 0.4rem; border: 1px solid;
 }
 .ilb-done    { color: #166534; border-color: rgba(34,197,94,0.4);  background: rgba(34,197,94,0.08);  }
-.ilb-pending { color: var(--g4); border-color: var(--g2);          background: transparent;           }
-.ilb-blocked { color: #991b1b; border-color: rgba(239,68,68,0.4);  background: rgba(239,68,68,0.07);  }
-.ilb-ready   { color: #92400e; border-color: rgba(249,162,26,0.45); background: rgba(249,162,26,0.09); }
+.ilb-pending { color: #92400e; border-color: rgba(249,162,26,0.45); background: rgba(249,162,26,0.09); }
+.ilb-blocked   { color: #991b1b; border-color: rgba(239,68,68,0.4);  background: rgba(239,68,68,0.07);  }
+.ilb-ready     { color: #92400e; border-color: rgba(249,162,26,0.45); background: rgba(249,162,26,0.09); }
+.ilb-available { color: #166534; border-color: rgba(34,197,94,0.5); background: rgba(34,197,94,0.12); font-weight: 600; }
 .il-meta     { font-family: var(--ff-mono); font-size: 0.55rem; color: var(--g3); }
 
 /* Topline chip in measures column */
 .il-topline {
   font-family: var(--ff-mono); font-size: 0.52rem; font-weight: 700;
-  color: #92400e; border: 1px solid rgba(249,162,26,0.55);
-  background: rgba(249,162,26,0.13); border-radius: 3px;
+  color: #0c6b96; border: 1px solid rgba(87,192,233,0.55);
+  background: rgba(87,192,233,0.13); border-radius: 3px;
   padding: 0.1rem 0.38rem; white-space: nowrap;
+}
+.il-due {
+  font-family: var(--ff-mono); font-size: 0.52rem; font-weight: 600;
+  color: #0c6b96; white-space: nowrap;
 }
 
 /* ── View cards ── */
@@ -723,7 +755,8 @@ header {
 .fchip:hover { border-color: var(--g3); color: var(--g5); background: var(--g1); }
 .fchip.fc-active            { background: var(--indigo); color: var(--white); border-color: var(--indigo); }
 .fchip.fc-blocked.fc-active { background: #991b1b; border-color: #991b1b; color: var(--white); }
-.fchip.fc-ready.fc-active   { background: #92400e; border-color: #92400e; color: var(--white); }
+.fchip.fc-pending.fc-active { background: #92400e; border-color: #92400e; color: var(--white); }
+.fchip.fc-topline.fc-active { background: #0c6b96; border-color: #0c6b96; color: var(--white); }
 .fchip.fc-done.fc-active    { background: #166534; border-color: #166534; color: var(--white); }
 .filter-count { font-family: var(--ff-mono); font-size: 0.6rem; color: var(--g3); white-space: nowrap; }
 .filter-clear-btn {
@@ -1025,7 +1058,7 @@ body.gd-lock { overflow: hidden; }
         <div class="fchip-group" id="filter-chips">
           <button class="fchip fc-active" data-status="all">All</button>
           <button class="fchip fc-blocked" data-status="blocked">&#9650; Blocked</button>
-          <button class="fchip fc-ready" data-status="ready">Ready</button>
+          <button class="fchip fc-pending" data-status="pending">Pending</button>
           <button class="fchip fc-done" data-status="done">Done</button>
         </div>
         <span class="filter-count" id="filter-count"></span>
@@ -1055,10 +1088,15 @@ const nodeMap = Object.fromEntries(nodes.map(n => [n.data.id, n.data]));
 
 const models   = nodes.filter(n => n.data.type === 'model');
 const measures = nodes.filter(n => n.data.type === 'measure');
-const views    = nodes.filter(n => n.data.type === 'view');
+const views    = nodes.filter(n => n.data.type === 'dashboard');
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function pct(done, total) { return total ? Math.round(done / total * 100) : 0; }
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T12:00:00');
+  return d.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
+}
 
 function groupByDomain(items) {
   const out = {};
@@ -1109,10 +1147,10 @@ document.getElementById('summary-cards').innerHTML = `
 
 // ── Pipeline stats ─────────────────────────────────────────────────────────
 const measuresBlockedCount = measures.filter(n => n.data.status === 'blocked').length;
-const measuresPendingCount = measures.filter(n => n.data.status === 'ready').length;
+const measuresPendingCount = measures.filter(n => n.data.status === 'pending').length;
 
 document.getElementById('pipe-stat-source').innerHTML =
-  `<span class="pipe-stat-chip psc-source">${STATS.views_total} dashboards</span>`;
+  `<span class="pipe-stat-chip psc-source">${STATS.dashboards_total} dashboards</span>`;
 
 document.getElementById('pipe-stat-schema').innerHTML =
   STATS.models_done === STATS.models_total
@@ -1139,9 +1177,9 @@ document.getElementById('pipe-stat-cube').innerHTML =
 }
 
 document.getElementById('pipe-stat-bi').innerHTML =
-  STATS.views_done === STATS.views_total
-    ? `<span class="pipe-stat-chip psc-done">${STATS.views_done}/${STATS.views_total} ready</span>`
-    : `<span class="pipe-stat-chip psc-bi">${STATS.views_done}/${STATS.views_total} ready</span>`;
+  STATS.dashboards_done === STATS.dashboards_total
+    ? `<span class="pipe-stat-chip psc-done">${STATS.dashboards_done}/${STATS.dashboards_total} migrated</span>`
+    : `<span class="pipe-stat-chip psc-bi">${STATS.dashboards_done}/${STATS.dashboards_total} migrated</span>`;
 
 // ── Progress column renderer (with domain grouping) ────────────────────────
 function renderPcol(id, typeLabel, typeClass, color, items, opts) {
@@ -1150,24 +1188,38 @@ function renderPcol(id, typeLabel, typeClass, color, items, opts) {
   const total = items.length;
 
   const groups  = groupByDomain(items);
-  const domains = Object.keys(groups).sort();
+  const domains = Object.keys(groups).sort((a, b) => {
+    if (!opts.sortDomainsByDue) return a.localeCompare(b);
+    const earliest = grp => grp.reduce((min, n) => {
+      const d = n.data.due_on; return d && (!min || d < min) ? d : min;
+    }, '');
+    const ad = earliest(groups[a]), bd = earliest(groups[b]);
+    if (ad && bd) return ad.localeCompare(bd) || a.localeCompare(b);
+    if (ad) return -1; if (bd) return 1;
+    return a.localeCompare(b);
+  });
 
   const rows = domains.map((domain, di) => {
     let domItems = [...groups[domain]];
 
+    const byDue = (a, b) => {
+      const ad = a.data.due_on, bd = b.data.due_on;
+      if (ad && !bd) return -1; if (!ad && bd) return 1;
+      if (ad && bd && ad !== bd) return ad.localeCompare(bd);
+      return 0;
+    };
     if (opts.toplineFirst) {
-      // topline first, then alpha; within topline: done first
       domItems.sort((a, b) => {
-        const at = a.data.is_topline ? 0 : 1;
-        const bt = b.data.is_topline ? 0 : 1;
+        const due = byDue(a, b); if (due !== 0) return due;
+        const at = a.data.is_topline ? 0 : 1, bt = b.data.is_topline ? 0 : 1;
         if (at !== bt) return at - bt;
         const ak = a.data.status === 'complete' ? 0 : 1;
         const bk = b.data.status === 'complete' ? 0 : 1;
         return ak !== bk ? ak - bk : a.data.id.localeCompare(b.data.id);
       });
     } else {
-      // done first, then alpha
       domItems.sort((a, b) => {
+        const due = byDue(a, b); if (due !== 0) return due;
         const ak = a.data.status === 'complete' ? 0 : 1;
         const bk = b.data.status === 'complete' ? 0 : 1;
         return ak !== bk ? ak - bk : a.data.id.localeCompare(b.data.id);
@@ -1183,8 +1235,11 @@ function renderPcol(id, typeLabel, typeClass, color, items, opts) {
       if (opts.getBadge) {
         badge = opts.getBadge(d);
       } else {
-        const cls = ok ? 'ilb-done' : (d.status === 'blocked' ? 'ilb-blocked' : (d.status === 'ready' ? 'ilb-ready' : 'ilb-pending'));
-        const lbl = ok ? 'done' : (d.status === 'blocked' ? 'blocked' : (d.status === 'ready' ? 'ready' : 'pending'));
+        let cls, lbl;
+        if (ok)           { cls = 'ilb-done';      lbl = 'done'; }
+        else if (d.due_on){ cls = 'ilb-available';  lbl = `available: ${fmtDate(d.due_on)}`; }
+        else if (d.status === 'blocked') { cls = 'ilb-blocked'; lbl = 'blocked'; }
+        else              { cls = 'ilb-pending';   lbl = 'pending'; }
         badge = `<span class="il-badge ${cls}">${lbl}</span>`;
       }
 
@@ -1215,22 +1270,22 @@ function renderPcol(id, typeLabel, typeClass, color, items, opts) {
 renderPcol('pcol-models', 'Models', 'pt-model', '#F9A21A', models, {});
 
 renderPcol('pcol-measures', 'Measures', 'pt-measure', '#8b5cf6', measures, {
-  toplineFirst: true,
+  toplineFirst: true, sortDomainsByDue: true,
 });
 
-renderPcol('pcol-views', 'Views', 'pt-view', '#57C0E9', views, {
+renderPcol('pcol-views', 'Migrations Complete', 'pt-view', '#57C0E9', views, {
   clickable: true,
   getBadge: d => {
     if (d.status === 'complete') return `<span class="il-badge ilb-done">done</span>`;
     if (d.status === 'blocked')  return `<span class="il-badge ilb-blocked">blocked</span>`;
-    return `<span class="il-badge ilb-ready">ready</span>`;
+    return `<span class="il-badge ilb-pending">pending</span>`;
   },
 });
 
 // ── View detail cards ──────────────────────────────────────────────────────
-// Sort: done → ready → blocked
+// Sort: done → pending → blocked
 const sortedViews = [...views].sort((a, b) => {
-  const order = {complete: 0, ready: 1, blocked: 2};
+  const order = {complete: 0, pending: 1, blocked: 2};
   const ak = order[a.data.status] ?? 3, bk = order[b.data.status] ?? 3;
   return ak !== bk ? ak - bk : a.data.id.localeCompare(b.data.id);
 });
@@ -1238,70 +1293,63 @@ const sortedViews = [...views].sort((a, b) => {
 const viewCardsHtml = sortedViews.map(v => {
   const d = v.data;
 
+  const bm  = d.blocking_models   || [];
+  const bms = d.blocking_measures || [];
+  const totalBlockers = bm.length + bms.length;
+
   let cardCls, statusHtml, stateKey;
   if (d.status === 'complete') {
     stateKey   = 'done';
     cardCls    = 'cube-card cc-done';
-    statusHtml = '<span class="chip c-green">&#10003; complete</span>';
+    statusHtml = '<span class="chip c-green">&#10003; migrated</span>';
   } else if (d.status === 'blocked') {
     stateKey   = 'blocked';
-    const bc   = (d.blocking_measures || []).length;
     cardCls    = 'cube-card cc-blocked';
-    statusHtml = `<span class="chip c-red">&#9650; ${bc ? bc + ' pending' : 'blocked'}</span>`;
+    statusHtml = `<span class="chip c-red">&#9650; ${totalBlockers ? totalBlockers + ' blocking' : 'blocked'}</span>`;
   } else {
-    stateKey   = 'ready';
+    stateKey   = 'pending';
     cardCls    = 'cube-card cc-ready';
-    statusHtml = '<span class="chip c-gold">ready</span>';
+    statusHtml = '<span class="chip c-gold">pending</span>';
   }
 
-  // Subtasks section
-  let subtasksHtml = '';
-  if (d.sub_total > 0) {
-    const mp      = pct(d.sub_done, d.sub_total);
-    const subRows = d.subtasks.map(s => `
-      <li class="cc-sub-row ${s.done ? 'cc-sub-done' : 'cc-sub-pending'}">
-        <span class="cc-sub-dot"></span>
-        <span class="cc-sub-name">${s.name}</span>
-      </li>`).join('');
-    subtasksHtml = `
-      <div class="cc-metrics">
-        <div class="cc-metrics-header">
-          <span class="cc-metrics-label">Metrics</span>
-          <span class="cc-metrics-count">${d.sub_done}/${d.sub_total} (${mp}%)</span>
-        </div>
-        <div class="cc-track"><div class="cc-fill" style="width:${mp}%;background:#b45309"></div></div>
-        <ul class="cc-sub-list">${subRows}</ul>
-      </div>`;
-  }
+  const dueChip = d.due_on ? `<span class="chip c-muted" style="font-family:var(--ff-mono);font-size:0.65rem">${fmtDate(d.due_on)}</span>` : '';
 
-  // Blocking measures section
+  // Blocking section: cubes then measures
   let blockersHtml;
-  const blocking = d.blocking_measures || [];
-  if (d.status === 'complete' || STATS.all_measures_complete) {
-    blockersHtml = `<div class="cc-deps"><p class="cc-no-deps" style="color:#166534;font-style:normal">&#10003; All measures complete</p></div>`;
-  } else if (blocking.length === 0) {
-    blockersHtml = `<div class="cc-deps"><p class="cc-no-deps">No pending measures in this domain. Waiting on measures in other domains.</p></div>`;
+  if (d.status === 'complete') {
+    blockersHtml = `<div class="cc-deps"><p class="cc-no-deps" style="color:#166534;font-style:normal">&#10003; Migration complete</p></div>`;
+  } else if (totalBlockers === 0) {
+    blockersHtml = `<div class="cc-deps"><p class="cc-no-deps" style="color:#166534;font-style:normal">&#10003; All cubes and measures complete</p></div>`;
   } else {
-    const depRows = blocking.map(m => `
-      <li class="cc-dep dep-pending">
-        <span class="cc-dep-indicator"></span>
-        <span class="cc-dep-name">${m.name}</span>
-        ${m.topline ? '<span class="cc-dep-type">&#9733; topline</span>' : ''}
-      </li>`).join('');
-    blockersHtml = `<div class="cc-deps">
-      <div class="cc-deps-label">Pending measures &mdash; ${blocking.length} remaining in domain</div>
-      <ul class="cc-dep-list">${depRows}</ul>
-    </div>`;
+    let parts = [];
+    if (bm.length > 0) {
+      const rows = bm.map(name => `
+        <li class="cc-dep dep-pending">
+          <span class="cc-dep-indicator"></span>
+          <span class="cc-dep-name">${name}</span>
+          <span class="cc-dep-type">cube</span>
+        </li>`).join('');
+      parts.push(`<div class="cc-deps-label">Blocking cubes &mdash; ${bm.length} remaining</div><ul class="cc-dep-list">${rows}</ul>`);
+    }
+    if (bms.length > 0) {
+      const rows = bms.map(m => `
+        <li class="cc-dep dep-pending">
+          <span class="cc-dep-indicator"></span>
+          <span class="cc-dep-name">${m.name}</span>
+          ${m.topline ? '<span class="cc-dep-type">&#9733; topline</span>' : ''}
+        </li>`).join('');
+      parts.push(`<div class="cc-deps-label">Pending measures &mdash; ${bms.length} remaining</div><ul class="cc-dep-list">${rows}</ul>`);
+    }
+    blockersHtml = `<div class="cc-deps">${parts.join('')}</div>`;
   }
 
   const safeId = d.id.replace(/"/g, '&quot;');
   return `<div class="${cardCls}" data-name="${safeId}" data-state="${stateKey}">
     <div class="cc-top">
       <div class="cc-name">${d.id}</div>
-      <div class="cc-status">${statusHtml}</div>
+      <div class="cc-status">${statusHtml}${dueChip}</div>
     </div>
     <div><span class="cc-domain">${d.domain}</span></div>
-    ${subtasksHtml}
     ${blockersHtml}
   </div>`;
 }).join('');
@@ -1315,7 +1363,7 @@ const selectedIds = new Set();
 function applyFilter() {
   const query  = document.getElementById('cube-search').value.toLowerCase().trim();
   const status = document.querySelector('#filter-chips .fchip.fc-active').dataset.status;
-  const total  = views.length;
+  const total  = views.length;  // views = dashboard items
   let shown    = 0;
 
   document.querySelectorAll('#cube-grid .cube-card').forEach(card => {
@@ -1499,7 +1547,7 @@ def main():
     print(f"  Models:   {stats['models_done']}/{stats['models_total']}")
     print(f"  Measures: {stats['measures_done']}/{stats['measures_total']}  "
           f"(topline {stats['topline_done']}/{stats['topline_total']})")
-    print(f"  Views:    {stats['views_done']}/{stats['views_total']}")
+    print(f"  Dashboards: {stats['dashboards_done']}/{stats['dashboards_total']}")
     print(f"\n✓  Written to {OUTPUT_FILE}")
 
 

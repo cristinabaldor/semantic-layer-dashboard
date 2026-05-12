@@ -317,18 +317,20 @@ header {
   border-radius: 3px; padding: 0.1rem 0.4rem; border: 1px solid;
 }
 .ilb-done    { color: #166534; border-color: rgba(34,197,94,0.4);  background: rgba(34,197,94,0.08);  }
-.ilb-pending { color: var(--g4); border-color: var(--g2);          background: transparent;           }
-.ilb-blocked { color: #991b1b; border-color: rgba(239,68,68,0.4);  background: rgba(239,68,68,0.07);  }
-.ilb-ready   { color: #92400e; border-color: rgba(249,162,26,0.45); background: rgba(249,162,26,0.09); }
+.ilb-pending { color: #92400e; border-color: rgba(249,162,26,0.45); background: rgba(249,162,26,0.09); }
+.ilb-blocked   { color: #991b1b; border-color: rgba(239,68,68,0.4);  background: rgba(239,68,68,0.07);  }
+.ilb-ready     { color: #92400e; border-color: rgba(249,162,26,0.45); background: rgba(249,162,26,0.09); }
+.ilb-available { color: #166534; border-color: rgba(34,197,94,0.5); background: rgba(34,197,94,0.12); font-weight: 600; }
 .il-meta     { font-family: var(--ff-mono); font-size: 0.55rem; color: var(--g3); }
 
 /* Topline chip in measures column */
 .il-topline {
   font-family: var(--ff-mono); font-size: 0.52rem; font-weight: 700;
-  color: #92400e; border: 1px solid rgba(249,162,26,0.55);
-  background: rgba(249,162,26,0.13); border-radius: 3px;
+  color: #0c6b96; border: 1px solid rgba(87,192,233,0.55);
+  background: rgba(87,192,233,0.13); border-radius: 3px;
   padding: 0.1rem 0.38rem; white-space: nowrap;
 }
+.il-due { font-family: var(--ff-mono); font-size: 0.52rem; font-weight: 600; color: #0c6b96; white-space: nowrap; }
 
 /* ── View cards ── */
 .sec-cubes {
@@ -459,7 +461,8 @@ header {
 .fchip:hover { border-color: var(--g3); color: var(--g5); background: var(--g1); }
 .fchip.fc-active            { background: var(--indigo); color: var(--white); border-color: var(--indigo); }
 .fchip.fc-blocked.fc-active { background: #991b1b; border-color: #991b1b; color: var(--white); }
-.fchip.fc-ready.fc-active   { background: #92400e; border-color: #92400e; color: var(--white); }
+.fchip.fc-pending.fc-active { background: #92400e; border-color: #92400e; color: var(--white); }
+.fchip.fc-topline.fc-active { background: #0c6b96; border-color: #0c6b96; color: var(--white); }
 .fchip.fc-done.fc-active    { background: #166534; border-color: #166534; color: var(--white); }
 .filter-count { font-family: var(--ff-mono); font-size: 0.6rem; color: var(--g3); white-space: nowrap; }
 .filter-clear-btn {
@@ -762,7 +765,7 @@ body.gd-lock { overflow: hidden; }
         <div class="fchip-group" id="filter-chips">
           <button class="fchip fc-active" data-status="all">All</button>
           <button class="fchip fc-blocked" data-status="blocked">&#9650; Blocked</button>
-          <button class="fchip fc-ready" data-status="ready">Ready</button>
+          <button class="fchip fc-pending" data-status="pending">Pending</button>
           <button class="fchip fc-done" data-status="done">Done</button>
         </div>
         <button class="fchip fc-topline" id="topline-toggle">&#9733; Topline</button>
@@ -792,10 +795,16 @@ const nodeMap = Object.fromEntries(nodes.map(n => [n.data.id, n.data]));
 
 const models   = nodes.filter(n => n.data.type === 'model');
 const measures = nodes.filter(n => n.data.type === 'measure');
-const views    = nodes.filter(n => n.data.type === 'view');
+const views    = nodes.filter(n => n.data.type === 'dashboard');
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function pct(done, total) { return total ? Math.round(done / total * 100) : 0; }
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return `${+m}/${+d}/${y.slice(2)}`;
+}
 
 function groupByDomain(items) {
   const out = {};
@@ -842,7 +851,7 @@ document.getElementById('summary-cards').innerHTML = `
 // ── Pipeline stats ─────────────────────────────────────────────────────────
 const measuresDoneCount    = measures.filter(n => n.data.status === 'complete').length;
 const measuresBlockedCount = measures.filter(n => n.data.status === 'blocked').length;
-const measuresPendingCount = measures.filter(n => n.data.status === 'ready').length;
+const measuresPendingCount = measures.filter(n => n.data.status === 'pending').length;
 
 document.getElementById('pipe-stat-source').textContent = '';
 
@@ -858,7 +867,10 @@ document.getElementById('pipe-stat-metric').innerHTML =
     ? `<span class="pipe-stat-chip psc-done">${measuresDoneCount}/${measures.length} done</span>`
     : `<span class="pipe-stat-chip psc-done">${measuresDoneCount}/${measures.length} done</span>`;
 
-document.getElementById('pipe-stat-bi').textContent = '';
+document.getElementById('pipe-stat-bi').innerHTML =
+  STATS.dashboards_done === STATS.dashboards_total
+    ? `<span class="pipe-stat-chip psc-done">${STATS.dashboards_done}/${STATS.dashboards_total} migrated</span>`
+    : `<span class="pipe-stat-chip psc-bi">${STATS.dashboards_done}/${STATS.dashboards_total} migrated</span>`;
 
 // ── Progress column renderer (with domain grouping) ────────────────────────
 function renderPcol(id, typeLabel, typeClass, color, items, opts) {
@@ -867,24 +879,38 @@ function renderPcol(id, typeLabel, typeClass, color, items, opts) {
   const total = items.length;
 
   const groups  = groupByDomain(items);
-  const domains = Object.keys(groups).sort();
+  const domains = Object.keys(groups).sort((a, b) => {
+    if (!opts.sortDomainsByDue) return a.localeCompare(b);
+    const earliest = grp => grp.reduce((min, n) => {
+      const d = n.data.due_on; return d && (!min || d < min) ? d : min;
+    }, '');
+    const ad = earliest(groups[a]), bd = earliest(groups[b]);
+    if (ad && bd) return ad.localeCompare(bd) || a.localeCompare(b);
+    if (ad) return -1; if (bd) return 1;
+    return a.localeCompare(b);
+  });
 
   const rows = domains.map((domain, di) => {
     let domItems = [...groups[domain]];
 
+    const byDue = (a, b) => {
+      const ad = a.data.due_on, bd = b.data.due_on;
+      if (ad && !bd) return -1; if (!ad && bd) return 1;
+      if (ad && bd && ad !== bd) return ad.localeCompare(bd);
+      return 0;
+    };
     if (opts.toplineFirst) {
-      // topline first, then alpha; within topline: done first
       domItems.sort((a, b) => {
-        const at = a.data.is_topline ? 0 : 1;
-        const bt = b.data.is_topline ? 0 : 1;
+        const due = byDue(a, b); if (due !== 0) return due;
+        const at = a.data.is_topline ? 0 : 1, bt = b.data.is_topline ? 0 : 1;
         if (at !== bt) return at - bt;
         const ak = a.data.status === 'complete' ? 0 : 1;
         const bk = b.data.status === 'complete' ? 0 : 1;
         return ak !== bk ? ak - bk : a.data.id.localeCompare(b.data.id);
       });
     } else {
-      // done first, then alpha
       domItems.sort((a, b) => {
+        const due = byDue(a, b); if (due !== 0) return due;
         const ak = a.data.status === 'complete' ? 0 : 1;
         const bk = b.data.status === 'complete' ? 0 : 1;
         return ak !== bk ? ak - bk : a.data.id.localeCompare(b.data.id);
@@ -900,8 +926,11 @@ function renderPcol(id, typeLabel, typeClass, color, items, opts) {
       if (opts.getBadge) {
         badge = opts.getBadge(d);
       } else {
-        const cls = ok ? 'ilb-done' : (d.status === 'blocked' ? 'ilb-blocked' : (d.status === 'ready' ? 'ilb-ready' : 'ilb-pending'));
-        const lbl = ok ? 'done' : (d.status === 'blocked' ? 'blocked' : (d.status === 'ready' ? 'ready' : 'pending'));
+        let cls, lbl;
+        if (ok)           { cls = 'ilb-done';      lbl = 'done'; }
+        else if (d.due_on){ cls = 'ilb-available';  lbl = `available: ${fmtDate(d.due_on)}`; }
+        else if (d.status === 'blocked') { cls = 'ilb-blocked'; lbl = 'blocked'; }
+        else              { cls = 'ilb-pending';   lbl = 'pending'; }
         badge = `<span class="il-badge ${cls}">${lbl}</span>`;
       }
 
@@ -932,15 +961,14 @@ function renderPcol(id, typeLabel, typeClass, color, items, opts) {
 renderPcol('pcol-models', 'Cubes', 'pt-model', '#8b5cf6', models, {});
 
 renderPcol('pcol-measures', 'Metrics', 'pt-measure', '#22c55e', measures, {
-  toplineFirst: true,
+  toplineFirst: true, sortDomainsByDue: true,
 });
 
-renderPcol('pcol-views', 'Views', 'pt-view', '#57C0E9', views, {
-  clickable: true,
+renderPcol('pcol-views', 'Migrations Complete', 'pt-view', '#57C0E9', views, {
   getBadge: d => {
     if (d.status === 'complete') return `<span class="il-badge ilb-done">done</span>`;
     if (d.status === 'blocked')  return `<span class="il-badge ilb-blocked">blocked</span>`;
-    return `<span class="il-badge ilb-ready">ready</span>`;
+    return `<span class="il-badge ilb-pending">pending</span>`;
   },
 });
 
@@ -958,6 +986,9 @@ measures.forEach(n => {
 
 const domainCardHtml = Object.keys(measuresByDomain).sort().map(domain => {
   const domMeasures = [...measuresByDomain[domain]].sort((a, b) => {
+    const ad = a.data.due_on, bd = b.data.due_on;
+    if (ad && !bd) return -1; if (!ad && bd) return 1;
+    if (ad && bd && ad !== bd) return ad.localeCompare(bd);
     const at = a.data.is_topline ? 0 : 1, bt = b.data.is_topline ? 0 : 1;
     if (at !== bt) return at - bt;
     const ak = a.data.status === 'complete' ? 0 : 1;
@@ -980,7 +1011,7 @@ const domainCardHtml = Object.keys(measuresByDomain).sort().map(domain => {
     cardCls    = 'cube-card cc-blocked';
     statusHtml = `<span class="chip c-red">${done}/${total} done</span>`;
   } else {
-    stateKey   = 'ready';
+    stateKey   = 'pending';
     cardCls    = 'cube-card cc-ready';
     statusHtml = `<span class="chip c-gold">${done}/${total} done</span>`;
   }
@@ -988,13 +1019,16 @@ const domainCardHtml = Object.keys(measuresByDomain).sort().map(domain => {
   const rows = domMeasures.map(n => {
     const d  = n.data;
     const ok = d.status === 'complete';
-    const cls  = ok ? 'ilb-done' : (d.status === 'blocked' ? 'ilb-blocked' : 'ilb-ready');
-    const lbl  = ok ? 'done'     : (d.status === 'blocked' ? 'blocked'     : 'ready');
+    let cls2, lbl2;
+    if (ok)            { cls2 = 'ilb-done';      lbl2 = 'done'; }
+    else if (d.due_on) { cls2 = 'ilb-available';  lbl2 = `available: ${fmtDate(d.due_on)}`; }
+    else if (d.status === 'blocked') { cls2 = 'ilb-blocked'; lbl2 = 'blocked'; }
+    else               { cls2 = 'ilb-pending';   lbl2 = 'pending'; }
     const toplineHtml = d.is_topline ? '<span class="il-topline">&#9733; topline</span>' : '';
     return `<li class="il-row ${ok ? '' : 'is-pending'}" data-topline="${d.is_topline ? 'true' : 'false'}">
       <span class="il-dot ${ok ? 'il-dot-done' : 'il-dot-pending'}"></span>
       <span class="il-name">${d.id}</span>
-      <span class="il-aside">${toplineHtml}<span class="il-badge ${cls}">${lbl}</span></span>
+      <span class="il-aside">${toplineHtml}<span class="il-badge ${cls2}">${lbl2}</span></span>
     </li>`;
   }).join('');
 
