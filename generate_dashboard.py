@@ -2,7 +2,9 @@
 generate_dashboard.py
 ─────────────────────────────────────────────────────────────────────────────
 Reads the "Data Marts + Semantic Layer" Asana project (read-only) and writes
-data.js for index.html: one record per Tableau dashboard, plus milestones.
+data.js for the semantic layer build status page on the teamster docs site
+(docs/launch/semantic-layer/, which loads this repo's Pages copy): one record per
+Tableau dashboard, plus milestones.
 
 What it reads
   Dashboard tasks   tag `dashboard`; section = domain ("1 · …").
