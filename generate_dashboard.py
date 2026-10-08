@@ -1,1558 +1,263 @@
 """
 generate_dashboard.py
 ─────────────────────────────────────────────────────────────────────────────
-Generates index.html — an interactive progress dashboard for the
-Data Marts & Semantic Layer project, styled after the KTAF Big Board design
-system, with live completion status pulled from Asana.
+Reads the "Data Marts + Semantic Layer" Asana project (read-only) and writes
+data.js for index.html: one record per Tableau dashboard, plus milestones.
 
-Tasks are classified by tag (not section name):
-  dbt / cube  → model
-  measure     → measure   (topline flag set when also tagged 'topline')
-  view        → view
+What it reads
+  Dashboard tasks   tag `dashboard`; section = domain ("1 · …").
+    measure rows    subtasks tagged `measure` + one status tag. Done = ships in Cube.
+    checklist       subtasks named like CHECKLIST below (Anthony's transition steps).
+    dimensions      the "Dimensions" list in the task description,
+                    one line per dimension: `name · how it's used · status`.
+  Milestones        top-level tasks named `M0`, `M1.1` … `M5.5`.
 
-Implicit dependency model:
-  All models must complete before measures unlock;
-  all measures must complete before views unlock.
+Only names, counts, statuses and dates are written. Nothing else from the
+descriptions leaves this script; the output is published on a public page.
 
 USAGE
-─────
-  export ASANA_PAT="your-personal-access-token"
+  export ASANA_PAT=…        (or put ASANA_PAT=… in .env)
   python3 generate_dashboard.py
-  open index.html
-
-  Add --dry-run to print a section/task summary without generating HTML.
 """
 
-import os
-import sys
-import json
-import time
-import argparse
 import datetime
-import asana
-from asana.rest import ApiException
-
+import json
+import os
+import re
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 PROJECT_GID = "1213735218595734"
-OUTPUT_FILE  = "data.js"
+OUTPUT_FILE = "data.js"
+API = "https://app.asana.com/api/1.0"
+TASK_FIELDS = ("name,completed,tags.name,due_on,start_on,notes,"
+               "num_subtasks,resource_subtype")
+
+CHECKLIST = ["Built in Cube", "Matches within tolerance", "Privacy review passed",
+             "Pilot run", "Rebuilt in Tableau on Cube", "Launched"]
+PARKING_LOT_PREFIX = "Parking lot"
+
+# Measure status tag → page status key. A measure that is done is always "ready".
+MEASURE_TAGS = {
+    "cube-covered": "cube_work",   # catalog says covered but not ticked: not shipped yet
+    "cube-partial": "cube_work",   # partly in Cube: still needs Cube work
+    "mart-ready":   "cube_work",
+    "mart-missing": "data_work",
+}
+# Dimension status text (first match wins, so "partially cube-covered" precedes "cube-covered").
+DIMENSION_STATUSES = [
+    ("partially cube-covered", "cube_work"),
+    ("cube-partial",           "cube_work"),
+    ("cube-covered",           "ready"),
+    ("mart-ready",             "cube_work"),
+    ("mart-missing",           "data_work"),
+    ("workbook-only",          "tableau_only"),
+]
+MILESTONE_RE = re.compile(r"^(M\d+(?:\.\d+)?)\s+(.*)$")
 
 
-# ── ASANA HELPERS ─────────────────────────────────────────────────────────────
+# ── ASANA (read-only GETs) ────────────────────────────────────────────────────
 
-def _make_apis(pat):
-    cfg = asana.Configuration()
-    cfg.access_token = pat
-    client = asana.ApiClient(cfg)
-    return asana.SectionsApi(client), asana.TasksApi(client)
-
-
-def _rate_limited(fn, *args, **kwargs):
-    for attempt in range(5):
-        try:
-            return fn(*args, **kwargs)
-        except ApiException as e:
-            if e.status == 429:
-                wait = 2 ** attempt
-                print(f"  ⏳ Rate limited — waiting {wait}s...", file=sys.stderr)
-                time.sleep(wait)
-            else:
+def _get(pat, path, **params):
+    """GET every page of an Asana collection."""
+    params = {**params, "limit": 100}
+    out = []
+    while True:
+        url = f"{API}{path}?{urllib.parse.urlencode(params)}"
+        req = urllib.request.Request(url, headers={"Authorization": f"Bearer {pat}"})
+        for attempt in range(5):
+            try:
+                with urllib.request.urlopen(req, timeout=60) as r:
+                    body = json.load(r)
+                break
+            except urllib.error.HTTPError as e:
+                if e.code == 429 or e.code >= 500:
+                    wait = int(e.headers.get("Retry-After", 2 ** attempt))
+                    print(f"  ⏳ Asana {e.code}, waiting {wait}s…", file=sys.stderr)
+                    time.sleep(wait)
+                    continue
                 raise
-    raise RuntimeError("Max retries exceeded")
+        else:
+            raise RuntimeError(f"Asana kept failing for {path}")
+        out += body["data"]
+        if not body.get("next_page"):
+            return out
+        params["offset"] = body["next_page"]["offset"]
 
 
-# ── TASK CLASSIFICATION ───────────────────────────────────────────────────────
-
-def _classify_task(task):
-    """Return 'model', 'measure', 'view', 'dashboard', or None based on Asana task tags."""
-    tag_names = {t["name"].lower() for t in task.get("tags", [])}
-    if "dashboard" in tag_names:
-        return "dashboard"
-    if "view" in tag_names:
-        return "view"
-    if "measure" in tag_names:
-        return "measure"
-    if "dbt" in tag_names or "cube" in tag_names:
-        return "model"
-    return None
-
-
-# ── ASANA FETCH ───────────────────────────────────────────────────────────────
-
-def fetch_project_data(pat):
-    """
-    Returns a dict with keys:
-      sections  : list of {gid, name}
-      tasks     : list of {gid, name, completed, notes, section_gid, domain,
-                           type, is_topline, subtasks}
-    """
-    sections_api, tasks_api = _make_apis(pat)
-
-    # 1. Sections
-    raw_sections = list(_rate_limited(
-        sections_api.get_sections_for_project,
-        PROJECT_GID,
-        opts={"opt_fields": "gid,name"},
-    ))
-    sections = [{"gid": s["gid"], "name": s["name"]} for s in raw_sections]
-    print(f"  {len(sections)} sections found.")
-
-    # 2. Tasks per section (with tags)
+def fetch_project(pat):
+    """Top-level tasks with their section name and direct subtasks."""
     tasks = []
-    untyped_parents = []  # untyped tasks (e.g. dashboard) that may have measure subtasks
+    sections = _get(pat, f"/projects/{PROJECT_GID}/sections", opt_fields="name")
     for sec in sections:
-        raw_tasks = list(_rate_limited(
-            tasks_api.get_tasks_for_section,
-            sec["gid"],
-            opts={"opt_fields": "gid,name,completed,notes,tags,tags.name,due_on",
-                  "limit": 100},
-        ))
-        for t in raw_tasks:
-            task_type = _classify_task(t)
-            if task_type is None:
-                # Still scan for measure subtasks (e.g. dashboard container tasks)
-                untyped_parents.append({
-                    "gid":         t["gid"],
-                    "name":        t["name"],
-                    "section_gid": sec["gid"],
-                    "domain":      sec["name"],
-                    "type":        None,
-                    "subtasks":    [],
-                })
+        for t in _get(pat, f"/sections/{sec['gid']}/tasks", opt_fields=TASK_FIELDS):
+            t["section"] = sec["name"]
+            t["subtasks"] = (_get(pat, f"/tasks/{t['gid']}/subtasks", opt_fields=TASK_FIELDS)
+                             if t.get("num_subtasks") else [])
+            tasks.append(t)
+    print(f"  {len(sections)} sections, {len(tasks)} tasks, "
+          f"{sum(len(t['subtasks']) for t in tasks)} subtasks.")
+    return tasks
+
+
+# ── PARSING ───────────────────────────────────────────────────────────────────
+
+def _tags(task):
+    return {t["name"].lower() for t in task.get("tags", [])}
+
+
+def _domain(section_name):
+    """'1 · Ops: attendance' → 'Ops: attendance'."""
+    return re.sub(r"^\d+\s*·\s*", "", section_name).strip()
+
+
+def parse_dimensions(notes):
+    """Read the 'Dimensions' block of a dashboard description."""
+    lines = (notes or "").splitlines()
+    try:
+        start = next(i for i, l in enumerate(lines) if l.strip() == "Dimensions")
+    except StopIteration:
+        return None
+    dims = []
+    for line in lines[start + 1:]:
+        if line.strip() and not line[0].isspace():
+            break                     # next unindented heading ends the block
+        line = line.strip()
+        if not line:
+            continue
+        parts = [p.strip() for p in line.split(" · ")]
+        status_text = parts[-1] if len(parts) >= 3 else line
+        status = next((key for text, key in DIMENSION_STATUSES if text in status_text),
+                      "unknown")
+        dims.append({
+            "name":   parts[0][:120],
+            "use":    parts[1][:120] if len(parts) >= 3 else "",
+            "status": status,
+        })
+    return dims
+
+
+def measure_status(sub):
+    if sub.get("completed"):
+        return "ready"
+    for tag in _tags(sub):
+        if tag in MEASURE_TAGS:
+            return MEASURE_TAGS[tag]
+    return "unset"
+
+
+def build_dashboard(task, warnings):
+    measures, checklist = [], {}
+    for sub in task["subtasks"]:
+        if sub["name"].strip() in CHECKLIST:
+            checklist[sub["name"].strip()] = {"done": bool(sub.get("completed")),
+                                              "due": sub.get("due_on") or ""}
+        elif "measure" in _tags(sub):
+            measures.append({"name": sub["name"].strip()[:200],
+                             "status": measure_status(sub),
+                             "due": sub.get("due_on") or ""})
+        else:
+            warnings.append(f"'{task['name'].strip()}': untagged subtask "
+                            f"'{sub['name'][:60]}' skipped")
+
+    dimensions = parse_dimensions(task.get("notes"))
+    if dimensions is None:
+        warnings.append(f"'{task['name'].strip()}': no Dimensions list in description")
+
+    # Stage = furthest checklist step ticked (0 = no checklist or nothing ticked).
+    stage = max((i + 1 for i, step in enumerate(CHECKLIST)
+                 if checklist.get(step, {}).get("done")), default=0)
+    launched = checklist.get("Launched", {}).get("done", False)
+    all_measures_ready = bool(measures) and all(m["status"] == "ready" for m in measures)
+
+    return {
+        "gid":           task["gid"],
+        "name":          task["name"].strip(),
+        "domain":        _domain(task["section"]),
+        "due":           task.get("due_on") or checklist.get("Launched", {}).get("due", ""),
+        "measures":      measures,
+        "dimensions":    dimensions or [],
+        "has_checklist": bool(checklist),
+        "checklist":     [checklist.get(s, {}).get("done", False) for s in CHECKLIST],
+        "stage":         stage,
+        "launched":      launched,
+        "transitioned":  launched and all_measures_ready,
+    }
+
+
+def build_data(tasks):
+    warnings = []
+    dashboards, parking_lot, milestones = [], [], []
+
+    for t in tasks:
+        tags = _tags(t)
+        if "dashboard" in tags:
+            if not t.get("notes", "").strip() and not t["subtasks"]:
+                warnings.append(f"'{t['name'].strip()}' ({t['section']}): empty dashboard "
+                                "task, left off the page")
                 continue
-            tag_names = {tg["name"].lower() for tg in t.get("tags", [])}
-            tasks.append({
-                "gid":         t["gid"],
-                "name":        t["name"],
-                "completed":   bool(t.get("completed", False)),
-                "notes":       t.get("notes", ""),
-                "section_gid": sec["gid"],
-                "domain":      sec["name"],
-                "type":        task_type,
-                "is_topline":  "topline" in tag_names,
-                "due_on":      t.get("due_on") or "",
-                "subtasks":    [],
+            d = build_dashboard(t, warnings)
+            (parking_lot if t["section"].startswith(PARKING_LOT_PREFIX)
+             else dashboards).append(d)
+        elif "measure" in tags:
+            warnings.append(f"measure '{t['name'].strip()}' is not under a dashboard, "
+                            "so it is not counted")
+        m = MILESTONE_RE.match(t["name"].strip())
+        if m:
+            milestones.append({
+                "code":       m.group(1),
+                "name":       m.group(2).strip(),
+                "workstream": _domain(t["section"]),
+                "done":       bool(t.get("completed")),
+                "due":        t.get("due_on") or "",
+                "start":      t.get("start_on") or "",
             })
-        time.sleep(0.15)
-    print(f"  {len(tasks)} tasks found "
-          f"({sum(1 for t in tasks if t['type']=='model')} models, "
-          f"{sum(1 for t in tasks if t['type']=='measure')} measures, "
-          f"{sum(1 for t in tasks if t['type']=='view')} views).")
 
-    # 3. Subtasks for all tasks
-    #    - Subtasks tagged 'measure' → added to tasks list as full measure tasks
-    #    - Subtasks of view tasks with no type tag → view metric checklist items
-    #    - Untyped parents (e.g. dashboard tasks) also scanned for measure subtasks
-    print("  Fetching subtasks...")
-    measure_subs_found = 0
-    view_sub_items     = 0
-    snapshot = list(tasks) + untyped_parents  # include untyped parents for measure scanning
-    for parent in snapshot:
-        try:
-            subs = list(_rate_limited(
-                tasks_api.get_subtasks_for_task,
-                parent["gid"],
-                opts={"opt_fields": "gid,name,completed,tags,tags.name,due_on"},
-            ))
-            time.sleep(0.1)
-        except ApiException as e:
-            print(f"  Warning: subtasks unavailable for '{parent['name']}': {e.reason}",
-                  file=sys.stderr)
-            subs = []
-
-        for s in subs:
-            sub_type = _classify_task(s)
-            if sub_type == "measure":
-                tag_names = {tg["name"].lower() for tg in s.get("tags", [])}
-                tasks.append({
-                    "gid":         s["gid"],
-                    "name":        s["name"],
-                    "completed":   bool(s.get("completed", False)),
-                    "notes":       "",
-                    "section_gid": parent["section_gid"],
-                    "domain":      parent["domain"],
-                    "type":        "measure",
-                    "is_topline":  "topline" in tag_names,
-                    "due_on":      s.get("due_on") or "",
-                    "subtasks":    [],
-                })
-                measure_subs_found += 1
-            elif parent["type"] == "view" and sub_type is None:
-                # Untagged subtask of a view = metric checklist item
-                parent["subtasks"].append({
-                    "name": s["name"],
-                    "done": bool(s.get("completed", False)),
-                })
-                view_sub_items += 1
-
-    print(f"  {measure_subs_found} measure subtasks added; "
-          f"{view_sub_items} view checklist items.")
-    return {"sections": sections, "tasks": tasks}
-
-
-# ── GRAPH BUILDER ─────────────────────────────────────────────────────────────
-
-def build_graph(project_data):
-    """Returns (elements_list, stats_dict) from fetched Asana data."""
-    tasks = project_data["tasks"]
-
-    model_tasks     = [t for t in tasks if t["type"] == "model"]
-    measure_tasks   = [t for t in tasks if t["type"] == "measure"]
-    view_tasks      = [t for t in tasks if t["type"] == "view"]
-    dashboard_tasks = [t for t in tasks if t["type"] == "dashboard"]
-
-    all_models_complete   = (all(t["completed"] for t in model_tasks)
-                             if model_tasks else True)
-    all_measures_complete = (all(t["completed"] for t in measure_tasks)
-                             if measure_tasks else True)
-
-    # Per-domain completion maps — measures/views in a domain are blocked until
-    # that domain's cubes are done, then move to pending.
-    models_by_domain = {}
-    for m in model_tasks:
-        models_by_domain.setdefault(m["domain"], []).append(m)
-
-    measures_by_domain = {}
-    for m in measure_tasks:
-        measures_by_domain.setdefault(m["domain"], []).append(m)
-
-    def domain_models_done(domain):
-        dm = models_by_domain.get(domain, [])
-        return all(m["completed"] for m in dm) if dm else True
-
-    def domain_measures_done(domain):
-        dm = measures_by_domain.get(domain, [])
-        return all(m["completed"] for m in dm) if dm else True
-
-    def measure_state(t):
-        if t["completed"]: return "complete"
-        return "pending" if domain_models_done(t["domain"]) else "blocked"
-
-    def view_state(t):
-        if t["completed"]: return "complete"
-        return "pending" if domain_models_done(t["domain"]) else "blocked"
-
-    def dashboard_state(t):
-        if t["completed"]: return "complete"
-        if not domain_models_done(t["domain"]):   return "blocked"
-        if not domain_measures_done(t["domain"]): return "blocked"
-        return "pending"
-
-    elements = []
-
-    for t in model_tasks:
-        elements.append({"data": {
-            "id":     t["name"],
-            "type":   "model",
-            "status": "complete" if t["completed"] else "pending",
-            "domain": t["domain"],
-            "due_on": t.get("due_on", ""),
-        }})
-
-    for t in measure_tasks:
-        elements.append({"data": {
-            "id":         t["name"],
-            "type":       "measure",
-            "status":     measure_state(t),
-            "domain":     t["domain"],
-            "is_topline": t["is_topline"],
-            "due_on":     t.get("due_on", ""),
-            "desc":       (t["notes"] or "").split("\n")[0][:120],
-        }})
-
-    for t in dashboard_tasks:
-        blocking_models = [
-            m["name"]
-            for m in models_by_domain.get(t["domain"], [])
-            if not m["completed"]
-        ]
-        blocking_measures = [
-            {"name": m["name"], "topline": m["is_topline"]}
-            for m in measures_by_domain.get(t["domain"], [])
-            if not m["completed"]
-        ]
-        elements.append({"data": {
-            "id":                t["name"],
-            "type":              "dashboard",
-            "status":            dashboard_state(t),
-            "domain":            t["domain"],
-            "due_on":            t.get("due_on", ""),
-            "blocking_models":   blocking_models,
-            "blocking_measures": blocking_measures,
-        }})
-
-    topline = [t for t in measure_tasks if t["is_topline"]]
-    stats = {
-        "models_done":            sum(1 for t in model_tasks     if t["completed"]),
-        "models_total":           len(model_tasks),
-        "measures_done":          sum(1 for t in measure_tasks   if t["completed"]),
-        "measures_total":         len(measure_tasks),
-        "topline_done":           sum(1 for t in topline         if t["completed"]),
-        "topline_total":          len(topline),
-        "dashboards_done":        sum(1 for t in dashboard_tasks if t["completed"]),
-        "dashboards_total":       len(dashboard_tasks),
-        "all_models_complete":    all_models_complete,
-        "all_measures_complete":  all_measures_complete,
-    }
-    return elements, stats
-
-
-# ── HTML TEMPLATE ─────────────────────────────────────────────────────────────
-# Placeholders: __ELEMENTS__, __STATS__, __UPDATED__
-
-HTML_TEMPLATE = r"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Data Marts &amp; Semantic Layer — Progress</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M10 2L17 5.5V14.5L10 18L3 14.5V5.5L10 2Z' stroke='%23001E62' stroke-width='1.4' fill='none'/%3E%3Cpath d='M10 2V18M3 5.5L17 5.5' stroke='%23001E62' stroke-width='1.4' stroke-linecap='round' opacity='0.5'/%3E%3C/svg%3E"/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --indigo:  #001E62;
-  --white:   #FFFFFF;
-  --orange:  #F9A21A;
-  --blue:    #57C0E9;
-  --green:   #22c55e;
-  --g1: #F4F5F7;
-  --g2: #E2E4E9;
-  --g3: #9BA3AF;
-  --g4: #6B7280;
-  --g5: #374151;
-  --ff-head: 'Barlow Condensed', sans-serif;
-  --ff-body: 'DM Sans', sans-serif;
-  --ff-mono: 'JetBrains Mono', monospace;
-  --r:    8px;
-  --r-lg: 14px;
-  --mw:   1280px;
-}
-
-html { font-size: 16px; scroll-behavior: smooth; }
-body {
-  background: var(--white);
-  color: var(--g5);
-  font-family: var(--ff-body);
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* ── Header ── */
-header {
-  position: sticky; top: 0; z-index: 100;
-  background: rgba(255,255,255,0.95);
-  backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--g2);
-}
-.hdr {
-  max-width: var(--mw); margin: 0 auto; padding: 0 2rem;
-  height: 58px; display: flex; align-items: center; justify-content: space-between;
-  gap: 1rem;
-}
-.brand { display: flex; align-items: center; gap: 0.7rem; }
-.brand-mark {
-  width: 30px; height: 30px;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--indigo); flex-shrink: 0;
-}
-.brand-name {
-  font-family: var(--ff-head); font-size: 1rem; font-weight: 700;
-  letter-spacing: 0.07em; text-transform: uppercase; color: var(--indigo);
-}
-.hdr-right { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-
-/* ── Chips ── */
-.chip {
-  font-family: var(--ff-mono); font-size: 0.62rem; font-weight: 600;
-  letter-spacing: 0.04em; border-radius: 4px;
-  padding: 0.2rem 0.6rem; border: 1px solid; white-space: nowrap;
-}
-.c-blue   { color: #0c6b96;   border-color: rgba(87,192,233,0.5);   background: rgba(87,192,233,0.12);  }
-.c-orange { color: #92400e;   border-color: rgba(249,162,26,0.5);   background: rgba(249,162,26,0.12);  }
-.c-green  { color: #166534;   border-color: rgba(34,197,94,0.45);   background: rgba(34,197,94,0.10);   }
-.c-muted  { color: var(--g4); border-color: var(--g2);              background: var(--g1);              }
-.c-gold   { color: #92400e;   border-color: rgba(180,83,9,0.35);    background: rgba(251,191,36,0.12);  }
-.c-red    { color: #991b1b;   border-color: rgba(239,68,68,0.45);   background: rgba(239,68,68,0.09);   }
-.c-amber  { color: #78350f;   border-color: rgba(245,158,11,0.45);  background: rgba(245,158,11,0.09);  }
-.c-purple { color: #5b21b6;   border-color: rgba(139,92,246,0.45);  background: rgba(139,92,246,0.09);  }
-
-.pulse-dot {
-  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
-  background: #0c6b96; margin-right: 4px; vertical-align: middle;
-  animation: pulse 2.2s ease-in-out infinite;
-}
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.4; transform: scale(0.75); }
-}
-
-/* ── Hero ── */
-.hero {
-  padding: 3.5rem 2rem 3rem;
-  border-bottom: 1px solid var(--g2);
-  background: var(--white);
-  position: relative; overflow: hidden;
-}
-.hero::before {
-  content: '';
-  position: absolute; inset: 0;
-  background-image:
-    linear-gradient(var(--g2) 1px, transparent 1px),
-    linear-gradient(90deg, var(--g2) 1px, transparent 1px);
-  background-size: 48px 48px;
-  opacity: 0.4; pointer-events: none;
-}
-.hero::after {
-  content: '';
-  position: absolute; top: -80px; right: -80px;
-  width: 360px; height: 360px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(249,162,26,0.07) 0%, transparent 70%);
-  pointer-events: none;
-}
-.hero-inner { max-width: var(--mw); margin: 0 auto; position: relative; }
-.hero-eyebrow {
-  display: inline-flex; align-items: center; gap: 0.45rem;
-  font-family: var(--ff-mono); font-size: 0.62rem; font-weight: 600;
-  letter-spacing: 0.12em; text-transform: uppercase; color: #0c6b96;
-  background: rgba(87,192,233,0.08); border: 1px solid rgba(87,192,233,0.25);
-  border-radius: 20px; padding: 0.28rem 0.9rem; margin-bottom: 1.4rem;
-}
-.hero-title {
-  font-family: var(--ff-head);
-  font-size: clamp(2.8rem, 6vw, 4.8rem);
-  font-weight: 800; color: var(--indigo);
-  line-height: 0.97; letter-spacing: -0.02em; margin-bottom: 1rem;
-}
-.hero-title-accent { color: var(--orange); }
-.hero-body {
-  font-size: 1rem; color: var(--g4); line-height: 1.78;
-  max-width: 680px; margin-bottom: 2rem;
-}
-.hero-layout {
-  display: flex; align-items: flex-start; gap: 2.5rem; margin-bottom: 2.5rem;
-}
-.hero-left { flex: 1; min-width: 0; }
-.hero-left .hero-body { margin-bottom: 0; }
-.hero-right {
-  display: flex; flex-direction: column; gap: 0.85rem;
-  width: 210px; flex-shrink: 0; padding-top: 0.25rem;
-}
-@media (max-width: 900px) {
-  .hero-layout { flex-direction: column; }
-  .hero-right { flex-direction: row; width: 100%; }
-}
-.summary-card {
-  background: var(--g1); border: 1px solid var(--g2);
-  border-radius: var(--r-lg); padding: 1.1rem 1.25rem;
-}
-.sc-pct {
-  font-family: var(--ff-head); font-size: 2.8rem; font-weight: 800;
-  color: var(--indigo); line-height: 1; margin-bottom: 0.15rem;
-}
-.sc-label {
-  font-family: var(--ff-mono); font-size: 0.58rem; font-weight: 600;
-  letter-spacing: 0.1em; text-transform: uppercase; color: var(--g3);
-  margin-bottom: 0.3rem;
-}
-.sc-sub { font-family: var(--ff-mono); font-size: 0.6rem; color: var(--g4); }
-.sc-track {
-  height: 3px; background: var(--g2); border-radius: 2px;
-  overflow: hidden; margin-top: 0.6rem;
-}
-.sc-fill { height: 100%; border-radius: 2px; }
-
-/* ── Pipeline Bar ── */
-.pipeline-bar {
-  background: var(--white);
-  border-bottom: 1px solid var(--g2);
-  padding: 1.5rem 2rem;
-}
-.pipeline-bar-inner { max-width: var(--mw); margin: 0 auto; }
-.pipeline-bar-top {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 1.4rem;
-}
-.pipeline-bar-eyebrow {
-  font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
-  letter-spacing: 0.14em; text-transform: uppercase; color: var(--g3);
-}
-.glossary-btn {
-  display: inline-flex; align-items: center; gap: 0.4rem;
-  font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
-  letter-spacing: 0.06em; text-transform: uppercase; color: var(--white);
-  background: var(--indigo); border: 1px solid var(--indigo);
-  border-radius: 6px; padding: 0.35rem 0.8rem; cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-.glossary-btn:hover { background: #002b8a; border-color: #002b8a; }
-.gd-pipeline-track {
-  display: grid;
-  grid-template-columns: 1fr 28px 1fr 28px 1fr 28px 1fr 28px 1fr;
-  align-items: start;
-}
-.gd-pipe-step { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; }
-.gd-pipe-icon {
-  width: 44px; height: 44px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-}
-.ps-source .gd-pipe-icon { background: rgba(107,114,128,0.08); border: 1px solid rgba(107,114,128,0.22); color: #4B5563; }
-.ps-schema .gd-pipe-icon { background: rgba(249,162,26,0.09);  border: 1px solid rgba(249,162,26,0.28);  color: #92400e; }
-.ps-cube   .gd-pipe-icon { background: rgba(139,92,246,0.09);  border: 1px solid rgba(139,92,246,0.28);  color: #5b21b6; }
-.ps-metric .gd-pipe-icon { background: rgba(34,197,94,0.08);   border: 1px solid rgba(34,197,94,0.22);   color: #166534; }
-.ps-bi     .gd-pipe-icon { background: rgba(87,192,233,0.08);  border: 1px solid rgba(87,192,233,0.22);  color: #0c6b96; }
-.gd-pipe-label {
-  font-family: var(--ff-head); font-size: 0.85rem; font-weight: 700;
-  letter-spacing: 0.04em; text-transform: uppercase;
-  color: var(--indigo); line-height: 1; text-align: center;
-}
-.gd-pipe-sub {
-  font-family: var(--ff-mono); font-size: 0.53rem; color: var(--g3);
-  text-align: center; line-height: 1.3;
-}
-.gd-pipe-stat {
-  font-family: var(--ff-mono); font-size: 0.58rem; color: var(--g4);
-  text-align: center; line-height: 1.3; min-height: 1.2em;
-}
-.gd-pipe-arrow {
-  display: flex; justify-content: center; padding-top: 16px;
-  color: var(--g2);
-}
-.pipe-stat-chip {
-  display: inline-block; font-family: var(--ff-mono); font-size: 0.52rem;
-  font-weight: 600; border-radius: 3px; padding: 0.1rem 0.38rem;
-  margin: 0 0.1rem; border: 1px solid; white-space: nowrap;
-}
-.psc-source  { color: #374151; border-color: rgba(107,114,128,0.4);   background: rgba(107,114,128,0.08); }
-.psc-schema  { color: #92400e; border-color: rgba(249,162,26,0.45);   background: rgba(249,162,26,0.10);  }
-.psc-cube    { color: #5b21b6; border-color: rgba(139,92,246,0.45);   background: rgba(139,92,246,0.09);  }
-.psc-bi      { color: #0c6b96; border-color: rgba(87,192,233,0.45);   background: rgba(87,192,233,0.10);  }
-.psc-blocked { color: #991b1b; border-color: rgba(239,68,68,0.4);     background: rgba(239,68,68,0.09);   }
-.psc-pending { color: var(--g4); border-color: var(--g2);             background: var(--g1);              }
-.psc-done    { color: #166534; border-color: rgba(34,197,94,0.4);     background: rgba(34,197,94,0.09);   }
-
-/* ── Section wrapper ── */
-.sec-wrap { max-width: var(--mw); margin: 0 auto; }
-.sec-label {
-  font-family: var(--ff-mono); font-size: 0.62rem; font-weight: 600;
-  letter-spacing: 0.12em; text-transform: uppercase; color: var(--g3);
-  margin-bottom: 1.25rem;
-}
-
-/* ── Progress columns ── */
-.sec-progress {
-  background: var(--g1);
-  padding: 2.75rem 2rem;
-  border-bottom: 1px solid var(--g2);
-}
-.progress-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 1.25rem;
-  align-items: start;
-}
-@media (max-width: 900px)  { .progress-grid { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 600px)  { .progress-grid { grid-template-columns: 1fr; } }
-
-.pcol {
-  background: var(--white);
-  border: 1px solid var(--g2);
-  border-radius: var(--r-lg);
-  overflow: hidden;
-}
-.pcol-head {
-  padding: 1rem 1.2rem 0.9rem;
-  border-bottom: 1px solid var(--g2);
-}
-.pcol-type {
-  font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
-  letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.45rem;
-}
-.pt-model   { color: #92400e; }
-.pt-measure { color: #5b21b6; }
-.pt-view    { color: #0c6b96; }
-.pcol-score {
-  font-family: var(--ff-head); font-size: 1.9rem; font-weight: 800;
-  color: var(--indigo); line-height: 1; margin-bottom: 0.55rem;
-}
-.pcol-score-denom { font-size: 1.1rem; color: var(--g3); }
-.prog-track {
-  height: 5px; background: var(--g2); border-radius: 3px; overflow: hidden;
-}
-.prog-fill { height: 100%; border-radius: 3px; }
-
-.item-list { list-style: none; max-height: 420px; overflow-y: auto; padding: 0.4rem 0; }
-.item-list::-webkit-scrollbar { width: 4px; }
-.item-list::-webkit-scrollbar-track { background: transparent; }
-.item-list::-webkit-scrollbar-thumb { background: var(--g2); border-radius: 2px; }
-
-/* Domain divider row inside item-list */
-.domain-div {
-  padding: 0.55rem 1.2rem 0.2rem;
-  font-family: var(--ff-mono); font-size: 0.54rem; font-weight: 600;
-  letter-spacing: 0.1em; text-transform: uppercase; color: var(--g3);
-  border-top: 1px solid var(--g2); margin-top: 0.25rem;
-}
-.domain-div:first-child { border-top: none; margin-top: 0; }
-
-.il-row {
-  display: flex; align-items: center; gap: 0.55rem;
-  padding: 0.36rem 1.2rem;
-  transition: background 0.1s;
-}
-.il-row:hover { background: var(--g1); }
-.il-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.il-dot-done    { background: var(--green); }
-.il-dot-pending { background: transparent; border: 1.5px solid var(--g3); }
-.il-name {
-  font-family: var(--ff-mono); font-size: 0.67rem; color: var(--g5);
-  flex: 1; min-width: 0; word-break: break-word;
-}
-.il-row.is-pending .il-name { color: var(--g4); }
-.il-aside { display: flex; align-items: center; gap: 0.35rem; flex-shrink: 0; }
-.il-badge {
-  font-family: var(--ff-mono); font-size: 0.55rem; font-weight: 600;
-  border-radius: 3px; padding: 0.1rem 0.4rem; border: 1px solid;
-}
-.ilb-done    { color: #166534; border-color: rgba(34,197,94,0.4);  background: rgba(34,197,94,0.08);  }
-.ilb-pending { color: #92400e; border-color: rgba(249,162,26,0.45); background: rgba(249,162,26,0.09); }
-.ilb-blocked   { color: #991b1b; border-color: rgba(239,68,68,0.4);  background: rgba(239,68,68,0.07);  }
-.ilb-ready     { color: #92400e; border-color: rgba(249,162,26,0.45); background: rgba(249,162,26,0.09); }
-.ilb-available { color: #166534; border-color: rgba(34,197,94,0.5); background: rgba(34,197,94,0.12); font-weight: 600; }
-.il-meta     { font-family: var(--ff-mono); font-size: 0.55rem; color: var(--g3); }
-
-/* Topline chip in measures column */
-.il-topline {
-  font-family: var(--ff-mono); font-size: 0.52rem; font-weight: 700;
-  color: #0c6b96; border: 1px solid rgba(87,192,233,0.55);
-  background: rgba(87,192,233,0.13); border-radius: 3px;
-  padding: 0.1rem 0.38rem; white-space: nowrap;
-}
-.il-due {
-  font-family: var(--ff-mono); font-size: 0.52rem; font-weight: 600;
-  color: #0c6b96; white-space: nowrap;
-}
-
-/* ── View cards ── */
-.sec-cubes {
-  background: var(--white);
-  padding: 2.75rem 2rem;
-  border-bottom: 1px solid var(--g2);
-}
-.cube-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 1rem;
-}
-.cube-card {
-  border: 1px solid var(--g2);
-  border-radius: var(--r-lg);
-  padding: 1.2rem 1.35rem;
-  background: var(--white);
-  transition: box-shadow 0.15s, border-color 0.15s;
-  border-left-width: 3px;
-}
-.cube-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.07); }
-.cc-done    { border-left-color: var(--green); }
-.cc-blocked { border-left-color: #ef4444; }
-.cc-ready   { border-left-color: var(--orange); }
-
-.cc-top {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 0.75rem; margin-bottom: 0.55rem;
-}
-.cc-name {
-  font-family: var(--ff-head); font-size: 1.05rem; font-weight: 700;
-  color: var(--indigo); line-height: 1.2; word-break: break-word;
-}
-.cc-status { flex-shrink: 0; margin-top: 0.1rem; }
-
-/* Domain chip on view cards */
-.cc-domain {
-  font-family: var(--ff-mono); font-size: 0.57rem; font-weight: 600;
-  letter-spacing: 0.04em; border-radius: 3px; padding: 0.15rem 0.55rem;
-  background: rgba(87,192,233,0.1); color: #0c6b96;
-  border: 1px solid rgba(87,192,233,0.28); display: inline-block;
-  margin-bottom: 0.75rem;
-}
-
-.cc-metrics { margin-bottom: 0.85rem; }
-.cc-metrics-header {
-  display: flex; justify-content: space-between; align-items: baseline;
-  margin-bottom: 0.3rem;
-}
-.cc-metrics-label {
-  font-family: var(--ff-mono); font-size: 0.58rem; font-weight: 600;
-  letter-spacing: 0.08em; text-transform: uppercase; color: var(--g3);
-}
-.cc-metrics-count { font-family: var(--ff-mono); font-size: 0.58rem; color: var(--g4); }
-.cc-track { height: 4px; background: var(--g2); border-radius: 2px; overflow: hidden; }
-.cc-fill  { height: 100%; border-radius: 2px; }
-
-.cc-sub-list {
-  list-style: none; margin-top: 0.5rem;
-  display: flex; flex-direction: column; gap: 0.18rem;
-  max-height: 140px; overflow-y: auto; padding: 0 0 0.25rem;
-}
-.cc-sub-list::-webkit-scrollbar { width: 3px; }
-.cc-sub-list::-webkit-scrollbar-thumb { background: var(--g2); }
-.cc-sub-row {
-  display: flex; align-items: center; gap: 0.4rem;
-  font-family: var(--ff-mono); font-size: 0.62rem;
-}
-.cc-sub-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
-.cc-sub-done    .cc-sub-dot { background: var(--green); }
-.cc-sub-pending .cc-sub-dot { background: transparent; border: 1.5px solid var(--g3); }
-.cc-sub-done    .cc-sub-name { color: var(--g3); text-decoration: line-through; }
-.cc-sub-pending .cc-sub-name { color: var(--g5); }
-
-.cc-deps { border-top: 1px solid var(--g2); padding-top: 0.75rem; margin-top: 0.75rem; }
-.cc-deps-label {
-  font-family: var(--ff-mono); font-size: 0.58rem; font-weight: 600;
-  letter-spacing: 0.08em; text-transform: uppercase; color: var(--g3);
-  margin-bottom: 0.4rem;
-}
-.cc-dep-list { list-style: none; display: flex; flex-direction: column; gap: 0.2rem; }
-.cc-dep {
-  display: flex; align-items: center; gap: 0.4rem;
-  font-family: var(--ff-mono); font-size: 0.62rem;
-}
-.cc-dep-indicator { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-.dep-done    .cc-dep-indicator { background: var(--green); }
-.dep-pending .cc-dep-indicator { background: transparent; border: 1.5px solid #ef4444; }
-.dep-done    .cc-dep-name { color: var(--g3); text-decoration: line-through; }
-.dep-pending .cc-dep-name { color: var(--g5); font-weight: 600; }
-.cc-dep-type { font-size: 0.55rem; color: var(--g3); margin-left: auto; flex-shrink: 0; }
-.cc-no-deps { font-family: var(--ff-mono); font-size: 0.62rem; color: var(--g3); font-style: italic; }
-
-/* ── Filter bar ── */
-.cube-toolbar {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem;
-}
-.filter-bar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
-.search-input {
-  font-family: var(--ff-mono); font-size: 0.7rem;
-  border: 1px solid var(--g2); border-radius: var(--r);
-  padding: 0.35rem 0.8rem; outline: none;
-  background: var(--g1); color: var(--g5); width: 220px;
-  transition: border-color 0.15s, background 0.15s;
-}
-.search-input:focus { border-color: var(--blue); background: var(--white); }
-.search-input::placeholder { color: var(--g3); }
-.fchip-group { display: flex; gap: 0.3rem; flex-wrap: wrap; }
-.fchip {
-  font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
-  letter-spacing: 0.04em; border-radius: 4px;
-  padding: 0.25rem 0.65rem; border: 1px solid var(--g2);
-  background: transparent; color: var(--g4);
-  cursor: pointer; transition: all 0.12s; white-space: nowrap;
-}
-.fchip:hover { border-color: var(--g3); color: var(--g5); background: var(--g1); }
-.fchip.fc-active            { background: var(--indigo); color: var(--white); border-color: var(--indigo); }
-.fchip.fc-blocked.fc-active { background: #991b1b; border-color: #991b1b; color: var(--white); }
-.fchip.fc-pending.fc-active { background: #92400e; border-color: #92400e; color: var(--white); }
-.fchip.fc-topline.fc-active { background: #0c6b96; border-color: #0c6b96; color: var(--white); }
-.fchip.fc-done.fc-active    { background: #166534; border-color: #166534; color: var(--white); }
-.filter-count { font-family: var(--ff-mono); font-size: 0.6rem; color: var(--g3); white-space: nowrap; }
-.filter-clear-btn {
-  font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
-  border-radius: 4px; padding: 0.25rem 0.65rem;
-  border: 1px solid var(--g2); background: transparent; color: var(--g4);
-  cursor: pointer; transition: all 0.12s;
-}
-.filter-clear-btn:hover { background: var(--g2); color: var(--g5); }
-.il-row-click { cursor: pointer; }
-.il-row-click:hover { background: rgba(87,192,233,0.07); }
-.il-row-click.il-selected {
-  background: rgba(0,30,98,0.07);
-  box-shadow: inset 2px 0 0 var(--indigo);
-}
-
-/* ── Footer ── */
-footer {
-  background: var(--indigo);
-  border-top: 1px solid rgba(255,255,255,0.06);
-  padding: 1.1rem 2rem;
-}
-.footer-inner {
-  max-width: var(--mw); margin: 0 auto;
-  display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 0.5rem;
-}
-.footer-txt {
-  font-family: var(--ff-mono); font-size: 0.6rem;
-  letter-spacing: 0.08em; color: rgba(255,255,255,0.35);
-}
-
-/* ── Glossary Drawer ── */
-.glossary-overlay {
-  position: fixed; inset: 0; z-index: 300;
-  background: rgba(0,0,0,0.45); opacity: 0; pointer-events: none;
-  transition: opacity 0.25s;
-}
-.glossary-overlay.gd-open { opacity: 1; pointer-events: all; }
-.glossary-drawer {
-  position: fixed; top: 0; right: 0; bottom: 0;
-  width: min(480px, 90vw); background: var(--white); z-index: 400;
-  transform: translateX(100%);
-  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
-  overflow-y: auto; display: flex; flex-direction: column;
-  box-shadow: -8px 0 40px rgba(0,0,0,0.12);
-}
-.glossary-drawer.gd-open { transform: translateX(0); }
-body.gd-lock { overflow: hidden; }
-.gd-header {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 1rem; padding: 1.5rem 1.75rem 1.25rem;
-  border-bottom: 1px solid var(--g2);
-  position: sticky; top: 0; background: var(--white); z-index: 1;
-}
-.gd-title-group { flex: 1; min-width: 0; }
-.gd-eyebrow {
-  font-family: var(--ff-mono); font-size: 0.55rem; font-weight: 600;
-  letter-spacing: 0.12em; text-transform: uppercase; color: var(--g3);
-  display: block; margin-bottom: 0.3rem;
-}
-.gd-title {
-  font-family: var(--ff-head); font-size: 1.6rem; font-weight: 800;
-  color: var(--indigo); line-height: 1.1;
-}
-.gd-close-btn {
-  width: 32px; height: 32px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--g1); border: 1px solid var(--g2);
-  border-radius: 6px; cursor: pointer; color: var(--g4);
-  transition: background 0.12s, color 0.12s;
-}
-.gd-close-btn:hover { background: var(--g2); color: var(--g5); }
-.gd-body { padding: 1.5rem 1.75rem; display: flex; flex-direction: column; gap: 0.85rem; }
-.gd-term-card {
-  border: 1px solid var(--g2); border-left-width: 3px;
-  border-radius: var(--r-lg); padding: 1rem 1.2rem;
-}
-.gd-term-name {
-  font-family: var(--ff-head); font-size: 1.1rem; font-weight: 700;
-  color: var(--indigo); line-height: 1; margin-bottom: 0.3rem;
-}
-.gd-term-tag {
-  display: block; font-family: var(--ff-mono); font-size: 0.55rem;
-  font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--g3); margin-bottom: 0.5rem;
-}
-.gd-term-desc { font-family: var(--ff-body); font-size: 0.82rem; color: var(--g4); line-height: 1.65; }
-.gd-term-desc code {
-  font-family: var(--ff-mono); font-size: 0.85em;
-  background: var(--g1); padding: 0.1em 0.3em; border-radius: 3px;
-}
-
-/* ── Scroll reveal ── */
-.rev { opacity: 0; transform: translateY(14px);
-  transition: opacity 0.5s ease, transform 0.5s ease; }
-.rev.on { opacity: 1; transform: none; }
-.d1 { transition-delay: 0.06s; } .d2 { transition-delay: 0.12s; }
-.d3 { transition-delay: 0.18s; } .d4 { transition-delay: 0.24s; }
-</style>
-</head>
-<body>
-
-<!-- ── GLOSSARY OVERLAY + DRAWER ── -->
-<div class="glossary-overlay" id="glossary-overlay" aria-hidden="true"></div>
-<aside class="glossary-drawer" id="glossary-drawer" role="dialog" aria-modal="true" aria-label="Data Pipeline Glossary" aria-hidden="true">
-  <div class="gd-header">
-    <div class="gd-title-group">
-      <span class="gd-eyebrow">Reference</span>
-      <h2 class="gd-title">Data Pipeline Glossary</h2>
-    </div>
-    <button class="gd-close-btn" id="glossary-close-btn" aria-label="Close glossary">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-        <path d="M2 2L12 12M12 2L2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-      </svg>
-    </button>
-  </div>
-  <div class="gd-body">
-    <div class="gd-term-card" style="border-left-color:#57C0E9">
-      <div class="gd-term-name">Model</div>
-      <span class="gd-term-tag">dbt &middot; SQL transformation</span>
-      <p class="gd-term-desc">A dbt model is a SELECT statement saved as a <code>.sql</code> file. Models transform raw source data into clean, business-ready tables — dims, facts, and bridges — that power downstream metrics and dashboards.</p>
-    </div>
-    <div class="gd-term-card" style="border-left-color:#57C0E9">
-      <div class="gd-term-name">Dimension</div>
-      <span class="gd-term-tag">dim_* &middot; descriptive attributes</span>
-      <p class="gd-term-desc">Dimension models describe the &ldquo;who, what, where&rdquo; of your data — people, places, courses, and dates. They&rsquo;re the reference tables that fact models join to for context and filtering.</p>
-    </div>
-    <div class="gd-term-card" style="border-left-color:#57C0E9">
-      <div class="gd-term-name">Fact Table</div>
-      <span class="gd-term-tag">fct_* &middot; events and transactions</span>
-      <p class="gd-term-desc">Fact models capture the &ldquo;what happened&rdquo; — attendance events, assessment scores, staff observations. Each row is a measurable event, joined to dimensions for context.</p>
-    </div>
-    <div class="gd-term-card" style="border-left-color:#F9A21A">
-      <div class="gd-term-name">Semantic Layer</div>
-      <span class="gd-term-tag">Cube &middot; MetricFlow</span>
-      <p class="gd-term-desc">The semantic layer sits between the data warehouse and BI tools. It defines business logic — joins, filters, and metric formulas — in one place so every tool sees consistent numbers.</p>
-    </div>
-    <div class="gd-term-card" style="border-left-color:#F9A21A">
-      <div class="gd-term-name">Metric / Measure</div>
-      <span class="gd-term-tag">measure &middot; computed value</span>
-      <p class="gd-term-desc">A metric is a computed value defined in the semantic layer: attendance rate, assessment proficiency %, staff retention. <strong>Topline</strong> metrics are the headline numbers tracked at the org level.</p>
-    </div>
-    <div class="gd-term-card" style="border-left-color:#22c55e">
-      <div class="gd-term-name">BI-Ready View</div>
-      <span class="gd-term-tag">view &middot; published dashboard</span>
-      <p class="gd-term-desc">A view is a fully-defined Cube perspective or Looker Explore that BI users can query directly. It&rsquo;s the final output — blocked until all upstream models and measures in its domain are complete.</p>
-    </div>
-  </div>
-</aside>
-
-<!-- ── HEADER ── -->
-<header>
-  <div class="hdr">
-    <div class="brand">
-      <div class="brand-mark">
-        <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-          <path d="M10 2L17 5.5V14.5L10 18L3 14.5V5.5L10 2Z" stroke="currentColor" stroke-width="1.4" fill="none"/>
-          <path d="M10 2V18M3 5.5L17 5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity="0.5"/>
-        </svg>
-      </div>
-      <span class="brand-name">Data Marts &amp; Semantic Layer</span>
-    </div>
-    <div class="hdr-right" id="hdr-stats"><!-- filled by JS --></div>
-  </div>
-</header>
-
-<!-- ── HERO ── -->
-<section class="hero">
-  <div class="hero-inner">
-    <div class="hero-layout">
-      <div class="hero-left">
-        <div class="hero-eyebrow">
-          <span class="pulse-dot"></span>
-          Semantic Layer Build Progress
-        </div>
-        <h1 class="hero-title">
-          From Dashboards<br>to <span class="hero-title-accent">Metrics</span>
-        </h1>
-        <p class="hero-body rev d1">
-          Tracking migration of Tableau reporting views to dimension and fact models and semantic layer metrics. Metrics unlock once all cubes are complete; migrations unlock once all metrics are complete.
-        </p>
-      </div>
-      <div class="hero-right rev d2" id="summary-cards"><!-- filled by JS --></div>
-    </div>
-  </div>
-</section>
-
-<!-- ── PIPELINE BAR ── -->
-<div class="pipeline-bar">
-  <div class="pipeline-bar-inner">
-    <div class="pipeline-bar-top">
-      <span class="pipeline-bar-eyebrow">Data Pipeline</span>
-      <button class="glossary-btn" id="glossary-open-btn" aria-haspopup="dialog">
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-          <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.2"/>
-          <path d="M6.5 5.3v3.6M6.5 4h.01" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-        </svg>
-        Glossary
-      </button>
-    </div>
-    <div class="gd-pipeline-track">
-      <div class="gd-pipe-step ps-source">
-        <div class="gd-pipe-icon">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <rect x="2" y="2" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.9"/>
-            <rect x="11" y="2" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.55"/>
-            <rect x="2" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.55"/>
-            <rect x="11" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.3"/>
-          </svg>
-        </div>
-        <div class="gd-pipe-label">Tableau</div>
-        <div class="gd-pipe-sub">Source Views</div>
-        <div class="gd-pipe-stat" id="pipe-stat-source"></div>
-      </div>
-      <div class="gd-pipe-arrow">
-        <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
-          <path d="M1 6H17M17 6L12 1M17 6L12 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <div class="gd-pipe-step ps-schema">
-        <div class="gd-pipe-icon">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.4" fill="none"/>
-            <path d="M3 7h14M7 7v10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <div class="gd-pipe-label">Models</div>
-        <div class="gd-pipe-sub">dbt + SQL</div>
-        <div class="gd-pipe-stat" id="pipe-stat-schema"></div>
-      </div>
-      <div class="gd-pipe-arrow">
-        <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
-          <path d="M1 6H17M17 6L12 1M17 6L12 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <div class="gd-pipe-step ps-cube">
-        <div class="gd-pipe-icon">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M10 2L17 5.5V14.5L10 18L3 14.5V5.5L10 2Z" stroke="currentColor" stroke-width="1.4" fill="none"/>
-            <path d="M10 2V18M3 5.5L17 5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity="0.5"/>
-          </svg>
-        </div>
-        <div class="gd-pipe-label">Semantic Layer</div>
-        <div class="gd-pipe-sub">Cube / MetricFlow</div>
-        <div class="gd-pipe-stat" id="pipe-stat-cube"></div>
-      </div>
-      <div class="gd-pipe-arrow">
-        <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
-          <path d="M1 6H17M17 6L12 1M17 6L12 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <div class="gd-pipe-step ps-metric">
-        <div class="gd-pipe-icon">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M3 15L7 9L11 12L15 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="15" cy="5" r="1.5" fill="currentColor"/>
-          </svg>
-        </div>
-        <div class="gd-pipe-label">Metrics</div>
-        <div class="gd-pipe-sub">Topline + Domain</div>
-        <div class="gd-pipe-stat" id="pipe-stat-metric"></div>
-      </div>
-      <div class="gd-pipe-arrow">
-        <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
-          <path d="M1 6H17M17 6L12 1M17 6L12 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <div class="gd-pipe-step ps-bi">
-        <div class="gd-pipe-icon">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <rect x="2" y="4" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.4" fill="none"/>
-            <path d="M7 18H13M10 15V18" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-            <path d="M6 11V9M9 11V7M12 11V8M15 11V6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <div class="gd-pipe-label">BI Tool</div>
-        <div class="gd-pipe-sub">Dashboards</div>
-        <div class="gd-pipe-stat" id="pipe-stat-bi"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ── PROGRESS COLUMNS ── -->
-<div class="sec-progress">
-  <div class="sec-wrap">
-    <div class="sec-label rev">Model &amp; Metric Progress</div>
-    <div class="progress-grid rev d1">
-      <div class="pcol" id="pcol-models"><!-- filled by JS --></div>
-      <div class="pcol" id="pcol-measures"><!-- filled by JS --></div>
-      <div class="pcol" id="pcol-views"><!-- filled by JS --></div>
-    </div>
-  </div>
-</div>
-
-<!-- ── VIEW CARDS ── -->
-<div class="sec-cubes">
-  <div class="sec-wrap">
-    <div class="cube-toolbar rev">
-      <div class="sec-label" style="margin-bottom:0">Views</div>
-      <div class="filter-bar">
-        <input type="text" id="cube-search" class="search-input" placeholder="Search views&#8230;"/>
-        <div class="fchip-group" id="filter-chips">
-          <button class="fchip fc-active" data-status="all">All</button>
-          <button class="fchip fc-blocked" data-status="blocked">&#9650; Blocked</button>
-          <button class="fchip fc-pending" data-status="pending">Pending</button>
-          <button class="fchip fc-done" data-status="done">Done</button>
-        </div>
-        <span class="filter-count" id="filter-count"></span>
-        <button class="filter-clear-btn" id="filter-clear" style="display:none">Clear</button>
-      </div>
-    </div>
-    <div class="cube-grid rev d1" id="cube-grid"><!-- filled by JS --></div>
-  </div>
-</div>
-
-<!-- ── FOOTER ── -->
-<footer>
-  <div class="footer-inner">
-    <span class="footer-txt">Data Marts &amp; Semantic Layer &mdash; KTAF</span>
-    <span class="footer-txt">Last updated: __UPDATED__</span>
-  </div>
-</footer>
-
-<script>
-const ELEMENTS     = __ELEMENTS__;
-const STATS        = __STATS__;
-const LAST_UPDATED = "__UPDATED__";
-
-// ── Parse ──────────────────────────────────────────────────────────────────
-const nodes   = ELEMENTS.filter(e => e.data);
-const nodeMap = Object.fromEntries(nodes.map(n => [n.data.id, n.data]));
-
-const models   = nodes.filter(n => n.data.type === 'model');
-const measures = nodes.filter(n => n.data.type === 'measure');
-const views    = nodes.filter(n => n.data.type === 'dashboard');
-
-// ── Helpers ────────────────────────────────────────────────────────────────
-function pct(done, total) { return total ? Math.round(done / total * 100) : 0; }
-function fmtDate(iso) {
-  if (!iso) return '';
-  const d = new Date(iso + 'T12:00:00');
-  return d.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
-}
-
-function groupByDomain(items) {
-  const out = {};
-  items.forEach(n => {
-    const d = n.data.domain || 'Other';
-    if (!out[d]) out[d] = [];
-    out[d].push(n);
-  });
-  return out;
-}
-
-function progBar(done, total, color) {
-  return `<div class="prog-track"><div class="prog-fill" style="width:${pct(done,total)}%;background:${color}"></div></div>`;
-}
-
-// ── Header stat chips ──────────────────────────────────────────────────────
-document.getElementById('hdr-stats').innerHTML = `
-  <span class="chip c-orange">Models ${pct(STATS.models_done, STATS.models_total)}%</span>
-  <span class="chip c-purple">Measures ${pct(STATS.measures_done, STATS.measures_total)}%</span>
-  <span class="chip c-muted">Topline ${pct(STATS.topline_done, STATS.topline_total)}%</span>
-`;
-
-// ── Summary cards ──────────────────────────────────────────────────────────
-const modelsPct   = pct(STATS.models_done,   STATS.models_total);
-const measuresPct = pct(STATS.measures_done, STATS.measures_total);
-const toplinePct  = pct(STATS.topline_done,  STATS.topline_total);
-
-document.getElementById('summary-cards').innerHTML = `
-  <div class="summary-card">
-    <div class="sc-pct">${modelsPct}%</div>
-    <div class="sc-label">Models</div>
-    <div class="sc-sub">${STATS.models_done}/${STATS.models_total} complete</div>
-    <div class="sc-track"><div class="sc-fill" style="width:${modelsPct}%;background:#F9A21A"></div></div>
-  </div>
-  <div class="summary-card">
-    <div class="sc-pct">${measuresPct}%</div>
-    <div class="sc-label">Measures</div>
-    <div class="sc-sub">${STATS.measures_done}/${STATS.measures_total} complete</div>
-    <div class="sc-track"><div class="sc-fill" style="width:${measuresPct}%;background:#8b5cf6"></div></div>
-  </div>
-  <div class="summary-card">
-    <div class="sc-pct">${toplinePct}%</div>
-    <div class="sc-label">Topline</div>
-    <div class="sc-sub">${STATS.topline_done}/${STATS.topline_total} complete</div>
-    <div class="sc-track"><div class="sc-fill" style="width:${toplinePct}%;background:#8b5cf6"></div></div>
-  </div>
-`;
-
-// ── Pipeline stats ─────────────────────────────────────────────────────────
-const measuresBlockedCount = measures.filter(n => n.data.status === 'blocked').length;
-const measuresPendingCount = measures.filter(n => n.data.status === 'pending').length;
-
-document.getElementById('pipe-stat-source').innerHTML =
-  `<span class="pipe-stat-chip psc-source">${STATS.dashboards_total} dashboards</span>`;
-
-document.getElementById('pipe-stat-schema').innerHTML =
-  STATS.models_done === STATS.models_total
-    ? `<span class="pipe-stat-chip psc-done">${STATS.models_done}/${STATS.models_total} done</span>`
-    : `<span class="pipe-stat-chip psc-schema">${STATS.models_done}/${STATS.models_total} done</span>`;
-
-document.getElementById('pipe-stat-cube').innerHTML =
-  STATS.measures_done === STATS.measures_total
-    ? `<span class="pipe-stat-chip psc-done">${STATS.measures_done}/${STATS.measures_total} done</span>`
-    : `<span class="pipe-stat-chip psc-cube">${STATS.measures_done}/${STATS.measures_total} done</span>`;
-
-{
-  let metricHtml = '';
-  if (measuresBlockedCount > 0) {
-    metricHtml += `<span class="pipe-stat-chip psc-blocked">${measuresBlockedCount} blocked</span>`;
-  }
-  if (measuresPendingCount > 0) {
-    metricHtml += `<span class="pipe-stat-chip psc-pending">${measuresPendingCount} pending</span>`;
-  }
-  if (!metricHtml) {
-    metricHtml = `<span class="pipe-stat-chip psc-done">all done</span>`;
-  }
-  document.getElementById('pipe-stat-metric').innerHTML = metricHtml;
-}
-
-document.getElementById('pipe-stat-bi').innerHTML =
-  STATS.dashboards_done === STATS.dashboards_total
-    ? `<span class="pipe-stat-chip psc-done">${STATS.dashboards_done}/${STATS.dashboards_total} migrated</span>`
-    : `<span class="pipe-stat-chip psc-bi">${STATS.dashboards_done}/${STATS.dashboards_total} migrated</span>`;
-
-// ── Progress column renderer (with domain grouping) ────────────────────────
-function renderPcol(id, typeLabel, typeClass, color, items, opts) {
-  opts = opts || {};
-  const done  = items.filter(n => n.data.status === 'complete').length;
-  const total = items.length;
-
-  const groups  = groupByDomain(items);
-  const domains = Object.keys(groups).sort((a, b) => {
-    if (!opts.sortDomainsByDue) return a.localeCompare(b);
-    const earliest = grp => grp.reduce((min, n) => {
-      const d = n.data.due_on; return d && (!min || d < min) ? d : min;
-    }, '');
-    const ad = earliest(groups[a]), bd = earliest(groups[b]);
-    if (ad && bd) return ad.localeCompare(bd) || a.localeCompare(b);
-    if (ad) return -1; if (bd) return 1;
-    return a.localeCompare(b);
-  });
-
-  const rows = domains.map((domain, di) => {
-    let domItems = [...groups[domain]];
-
-    const byDue = (a, b) => {
-      const ad = a.data.due_on, bd = b.data.due_on;
-      if (ad && !bd) return -1; if (!ad && bd) return 1;
-      if (ad && bd && ad !== bd) return ad.localeCompare(bd);
-      return 0;
-    };
-    if (opts.toplineFirst) {
-      domItems.sort((a, b) => {
-        const due = byDue(a, b); if (due !== 0) return due;
-        const at = a.data.is_topline ? 0 : 1, bt = b.data.is_topline ? 0 : 1;
-        if (at !== bt) return at - bt;
-        const ak = a.data.status === 'complete' ? 0 : 1;
-        const bk = b.data.status === 'complete' ? 0 : 1;
-        return ak !== bk ? ak - bk : a.data.id.localeCompare(b.data.id);
-      });
-    } else {
-      domItems.sort((a, b) => {
-        const due = byDue(a, b); if (due !== 0) return due;
-        const ak = a.data.status === 'complete' ? 0 : 1;
-        const bk = b.data.status === 'complete' ? 0 : 1;
-        return ak !== bk ? ak - bk : a.data.id.localeCompare(b.data.id);
-      });
-    }
-
-    const divClass = di === 0 ? 'domain-div' : 'domain-div';
-    const itemRows = domItems.map(n => {
-      const d   = n.data;
-      const ok  = d.status === 'complete';
-
-      let badge;
-      if (opts.getBadge) {
-        badge = opts.getBadge(d);
-      } else {
-        let cls, lbl;
-        if (ok)           { cls = 'ilb-done';      lbl = 'done'; }
-        else if (d.due_on){ cls = 'ilb-available';  lbl = `available: ${fmtDate(d.due_on)}`; }
-        else if (d.status === 'blocked') { cls = 'ilb-blocked'; lbl = 'blocked'; }
-        else              { cls = 'ilb-pending';   lbl = 'pending'; }
-        badge = `<span class="il-badge ${cls}">${lbl}</span>`;
-      }
-
-      const toplineHtml = d.is_topline ? '<span class="il-topline">&#9733; topline</span>' : '';
-      const clickCls    = opts.clickable ? ' il-row-click' : '';
-      const dataAttr    = opts.clickable ? ` data-id="${d.id.replace(/"/g, '&quot;')}"` : '';
-
-      return `<li class="il-row${clickCls} ${ok ? '' : 'is-pending'}"${dataAttr}>
-        <span class="il-dot ${ok ? 'il-dot-done' : 'il-dot-pending'}"></span>
-        <span class="il-name" title="${d.id}">${d.id}</span>
-        <span class="il-aside">${toplineHtml}${badge}</span>
-      </li>`;
-    }).join('');
-
-    return `<li class="${divClass}">${domain}</li>${itemRows}`;
-  }).join('');
-
-  document.getElementById(id).innerHTML = `
-    <div class="pcol-head">
-      <div class="pcol-type ${typeClass}">${typeLabel}</div>
-      <div class="pcol-score">${done}<span class="pcol-score-denom">/${total}</span></div>
-      ${progBar(done, total, color)}
-    </div>
-    <ul class="item-list">${rows}</ul>
-  `;
-}
-
-renderPcol('pcol-models', 'Models', 'pt-model', '#F9A21A', models, { sortDomainsByDue: true });
-
-renderPcol('pcol-measures', 'Measures', 'pt-measure', '#8b5cf6', measures, {
-  toplineFirst: true, sortDomainsByDue: true,
-});
-
-renderPcol('pcol-views', 'Migrations Complete', 'pt-view', '#57C0E9', views, {
-  clickable: true,
-  getBadge: d => {
-    if (d.status === 'complete') return `<span class="il-badge ilb-done">done</span>`;
-    if (d.status === 'blocked')  return `<span class="il-badge ilb-blocked">blocked</span>`;
-    return `<span class="il-badge ilb-pending">pending</span>`;
-  },
-});
-
-// ── View detail cards ──────────────────────────────────────────────────────
-// Sort: done → pending → blocked
-const sortedViews = [...views].sort((a, b) => {
-  const order = {complete: 0, pending: 1, blocked: 2};
-  const ak = order[a.data.status] ?? 3, bk = order[b.data.status] ?? 3;
-  return ak !== bk ? ak - bk : a.data.id.localeCompare(b.data.id);
-});
-
-const viewCardsHtml = sortedViews.map(v => {
-  const d = v.data;
-
-  const bm  = d.blocking_models   || [];
-  const bms = d.blocking_measures || [];
-  const totalBlockers = bm.length + bms.length;
-
-  let cardCls, statusHtml, stateKey;
-  if (d.status === 'complete') {
-    stateKey   = 'done';
-    cardCls    = 'cube-card cc-done';
-    statusHtml = '<span class="chip c-green">&#10003; migrated</span>';
-  } else if (d.status === 'blocked') {
-    stateKey   = 'blocked';
-    cardCls    = 'cube-card cc-blocked';
-    statusHtml = `<span class="chip c-red">&#9650; ${totalBlockers ? totalBlockers + ' blocking' : 'blocked'}</span>`;
-  } else {
-    stateKey   = 'pending';
-    cardCls    = 'cube-card cc-ready';
-    statusHtml = '<span class="chip c-gold">pending</span>';
-  }
-
-  const dueChip = d.due_on ? `<span class="chip c-muted" style="font-family:var(--ff-mono);font-size:0.65rem">${fmtDate(d.due_on)}</span>` : '';
-
-  // Blocking section: cubes then measures
-  let blockersHtml;
-  if (d.status === 'complete') {
-    blockersHtml = `<div class="cc-deps"><p class="cc-no-deps" style="color:#166534;font-style:normal">&#10003; Migration complete</p></div>`;
-  } else if (totalBlockers === 0) {
-    blockersHtml = `<div class="cc-deps"><p class="cc-no-deps" style="color:#166534;font-style:normal">&#10003; All cubes and measures complete</p></div>`;
-  } else {
-    let parts = [];
-    if (bm.length > 0) {
-      const rows = bm.map(name => `
-        <li class="cc-dep dep-pending">
-          <span class="cc-dep-indicator"></span>
-          <span class="cc-dep-name">${name}</span>
-          <span class="cc-dep-type">cube</span>
-        </li>`).join('');
-      parts.push(`<div class="cc-deps-label">Blocking cubes &mdash; ${bm.length} remaining</div><ul class="cc-dep-list">${rows}</ul>`);
-    }
-    if (bms.length > 0) {
-      const rows = bms.map(m => `
-        <li class="cc-dep dep-pending">
-          <span class="cc-dep-indicator"></span>
-          <span class="cc-dep-name">${m.name}</span>
-          ${m.topline ? '<span class="cc-dep-type">&#9733; topline</span>' : ''}
-        </li>`).join('');
-      parts.push(`<div class="cc-deps-label">Pending measures &mdash; ${bms.length} remaining</div><ul class="cc-dep-list">${rows}</ul>`);
-    }
-    blockersHtml = `<div class="cc-deps">${parts.join('')}</div>`;
-  }
-
-  const safeId = d.id.replace(/"/g, '&quot;');
-  return `<div class="${cardCls}" data-name="${safeId}" data-state="${stateKey}">
-    <div class="cc-top">
-      <div class="cc-name">${d.id}</div>
-      <div class="cc-status">${statusHtml}${dueChip}</div>
-    </div>
-    <div><span class="cc-domain">${d.domain}</span></div>
-    ${blockersHtml}
-  </div>`;
-}).join('');
-
-document.getElementById('cube-grid').innerHTML = viewCardsHtml
-  || '<p style="color:var(--g3);font-family:var(--ff-mono);font-size:0.75rem">No view tasks found.</p>';
-
-// ── Filter & multiselect ───────────────────────────────────────────────────
-const selectedIds = new Set();
-
-function applyFilter() {
-  const query  = document.getElementById('cube-search').value.toLowerCase().trim();
-  const status = document.querySelector('#filter-chips .fchip.fc-active').dataset.status;
-  const total  = views.length;  // views = dashboard items
-  let shown    = 0;
-
-  document.querySelectorAll('#cube-grid .cube-card').forEach(card => {
-    const name  = card.dataset.name;
-    const state = card.dataset.state;
-    let visible;
-    if (selectedIds.size > 0) {
-      visible = selectedIds.has(name);
-    } else {
-      const matchQ = !query || name.toLowerCase().includes(query);
-      const matchS = status === 'all' || state === status;
-      visible = matchQ && matchS;
-    }
-    card.style.display = visible ? '' : 'none';
-    if (visible) shown++;
-  });
-
-  document.getElementById('filter-count').textContent =
-    shown < total ? `${shown} of ${total}` : `${total} total`;
-
-  const hasClear = selectedIds.size > 0 || query || status !== 'all';
-  document.getElementById('filter-clear').style.display = hasClear ? '' : 'none';
-}
-
-document.querySelectorAll('#filter-chips .fchip').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('#filter-chips .fchip').forEach(b => b.classList.remove('fc-active'));
-    btn.classList.add('fc-active');
-    selectedIds.clear();
-    document.querySelectorAll('#pcol-views .il-row-click').forEach(r => r.classList.remove('il-selected'));
-    applyFilter();
-  });
-});
-
-document.getElementById('cube-search').addEventListener('input', () => {
-  selectedIds.clear();
-  document.querySelectorAll('#pcol-views .il-row-click').forEach(r => r.classList.remove('il-selected'));
-  applyFilter();
-});
-
-document.getElementById('filter-clear').addEventListener('click', () => {
-  selectedIds.clear();
-  document.getElementById('cube-search').value = '';
-  document.querySelectorAll('#pcol-views .il-row-click').forEach(r => r.classList.remove('il-selected'));
-  document.querySelectorAll('#filter-chips .fchip').forEach(b => b.classList.remove('fc-active'));
-  document.querySelector('#filter-chips .fchip[data-status="all"]').classList.add('fc-active');
-  applyFilter();
-});
-
-// Click-to-filter on views progress list
-document.querySelectorAll('#pcol-views .il-row-click').forEach(row => {
-  const name = row.dataset.id;
-  if (!name) return;
-  row.title = 'Click to filter';
-  row.addEventListener('click', () => {
-    if (selectedIds.has(name)) {
-      selectedIds.delete(name);
-      row.classList.remove('il-selected');
-    } else {
-      selectedIds.add(name);
-      row.classList.add('il-selected');
-      document.querySelectorAll('#filter-chips .fchip').forEach(b => b.classList.remove('fc-active'));
-      document.querySelector('#filter-chips .fchip[data-status="all"]').classList.add('fc-active');
-    }
-    applyFilter();
-    if (selectedIds.size === 1) {
-      document.querySelector('.sec-cubes').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  });
-});
-
-applyFilter();
-
-// ── Scroll reveal ──────────────────────────────────────────────────────────
-const revObs = new IntersectionObserver(entries => {
-  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('on'); });
-}, { threshold: 0.05 });
-document.querySelectorAll('.rev').forEach(el => revObs.observe(el));
-
-// ── Glossary drawer ────────────────────────────────────────────────────────
-(function () {
-  const drawer   = document.getElementById('glossary-drawer');
-  const overlay  = document.getElementById('glossary-overlay');
-  const openBtn  = document.getElementById('glossary-open-btn');
-  const closeBtn = document.getElementById('glossary-close-btn');
-
-  function openDrawer() {
-    drawer.classList.add('gd-open');
-    overlay.classList.add('gd-open');
-    document.body.classList.add('gd-lock');
-    drawer.setAttribute('aria-hidden', 'false');
-    closeBtn.focus();
-  }
-
-  function closeDrawer() {
-    drawer.classList.remove('gd-open');
-    overlay.classList.remove('gd-open');
-    document.body.classList.remove('gd-lock');
-    drawer.setAttribute('aria-hidden', 'true');
-    openBtn.focus();
-  }
-
-  openBtn.addEventListener('click', openDrawer);
-  closeBtn.addEventListener('click', closeDrawer);
-  overlay.addEventListener('click', closeDrawer);
-
-  document.addEventListener('keydown', function (e) {
-    if (!drawer.classList.contains('gd-open')) return;
-    if (e.key === 'Escape') { closeDrawer(); return; }
-    if (e.key === 'Tab') {
-      const focusable = Array.from(drawer.querySelectorAll(
-        'button, [href], input, select, [tabindex]:not([tabindex="-1"])'
-      ));
-      if (!focusable.length) return;
-      const first = focusable[0], last = focusable[focusable.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault(); last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault(); first.focus();
-      }
-    }
-  });
-})();
-</script>
-</body>
-</html>
-"""
-
-
-# ── GENERATOR ─────────────────────────────────────────────────────────────────
-# Writes data.js only — index.html is never modified by this script.
-# index.html loads data.js at runtime, so manual edits to the page are safe.
-
-def generate_data_js(elements, stats, last_updated):
-    return (
-        f"const ELEMENTS     = {json.dumps(elements, separators=(',', ':'))};\n"
-        f"const STATS        = {json.dumps(stats,    separators=(',', ':'))};\n"
-        f"const LAST_UPDATED = {json.dumps(last_updated)};\n"
-    )
+    def code_key(ms):
+        return [int(x) for x in ms["code"][1:].split(".")]
+    milestones.sort(key=code_key)
+    return {"dashboards": dashboards, "parking_lot": parking_lot,
+            "milestones": milestones, "checklist_steps": CHECKLIST}, warnings
 
 
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 
-def main():
-    parser = argparse.ArgumentParser(description="Generate semantic layer progress dashboard.")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="Skip Asana API call; print section/task summary only.")
-    args = parser.parse_args()
+def _load_dotenv():
+    if os.path.exists(".env"):
+        for line in open(".env", encoding="utf-8"):
+            key, sep, value = line.strip().partition("=")
+            if sep and key and not key.startswith("#"):
+                os.environ.setdefault(key, value.strip().strip("'\""))
 
+
+def main():
+    _load_dotenv()
     pat = os.environ.get("ASANA_PAT")
     if not pat:
-        sys.exit("Error: ASANA_PAT environment variable is not set.\n"
-                 "Run: export ASANA_PAT='your-token'  then retry.")
+        sys.exit("Error: ASANA_PAT is not set (export it or put it in .env).")
 
-    print("Fetching project data from Asana...")
-    project_data = fetch_project_data(pat)
-
-    if args.dry_run:
-        print("\nSection / task summary:")
-        by_section = {}
-        for t in project_data["tasks"]:
-            by_section.setdefault(t["domain"], []).append(t)
-        for domain, dtasks in sorted(by_section.items()):
-            counts = {k: sum(1 for x in dtasks if x["type"] == k)
-                      for k in ("model", "measure", "view")}
-            print(f"  {domain}: "
-                  f"{counts['model']} models  "
-                  f"{counts['measure']} measures  "
-                  f"{counts['view']} views")
-        return
-
-    print("Building graph...")
-    elements, stats = build_graph(project_data)
-
-    last_updated = datetime.datetime.now().strftime("%B %d, %Y at %-I:%M %p")
-    data_js = generate_data_js(elements, stats, last_updated)
+    print("Reading Asana…")
+    data, warnings = build_data(fetch_project(pat))
+    data["updated"] = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="minutes")
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        f.write(data_js)
+        f.write("const DATA = " + json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+                + ";\n")
 
-    print(f"  Models:   {stats['models_done']}/{stats['models_total']}")
-    print(f"  Measures: {stats['measures_done']}/{stats['measures_total']}  "
-          f"(topline {stats['topline_done']}/{stats['topline_total']})")
-    print(f"  Dashboards: {stats['dashboards_done']}/{stats['dashboards_total']}")
-    print(f"\n✓  Written to {OUTPUT_FILE}")
+    ds = data["dashboards"]
+    print(f"  Dashboards: {len(ds)} core ({sum(d['transitioned'] for d in ds)} transitioned), "
+          f"{len(data['parking_lot'])} parking lot")
+    print(f"  Metrics ready: {sum(m['status'] == 'ready' for d in ds for m in d['measures'])}"
+          f"/{sum(len(d['measures']) for d in ds)}")
+    print(f"  Milestones: {len(data['milestones'])} "
+          f"({sum(1 for m in data['milestones'] if m['due'])} dated)")
+    for w in warnings:
+        print(f"  ⚠ {w}")
+    print(f"✓ Written to {OUTPUT_FILE}")
 
 
 if __name__ == "__main__":

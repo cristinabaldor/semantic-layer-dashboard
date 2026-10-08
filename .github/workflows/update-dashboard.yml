@@ -7,7 +7,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'generate_dashboard.py'   # re-run whenever the template changes
+      - 'generate_dashboard.py'   # re-run whenever the data pull changes
 
 jobs:
   update:
@@ -21,9 +21,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
 
       - name: Generate dashboard
         env:

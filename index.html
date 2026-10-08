@@ -3,1172 +3,505 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Data Marts &amp; Semantic Layer — Progress</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M10 2L17 5.5V14.5L10 18L3 14.5V5.5L10 2Z' stroke='%23001E62' stroke-width='1.4' fill='none'/%3E%3Cpath d='M10 2V18M3 5.5L17 5.5' stroke='%23001E62' stroke-width='1.4' stroke-linecap='round' opacity='0.5'/%3E%3C/svg%3E"/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<title>Semantic Layer — Dashboard Transition</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M10 2L17 5.5V14.5L10 18L3 14.5V5.5L10 2Z' stroke='%23001E62' stroke-width='1.4' fill='none'/%3E%3C/svg%3E"/>
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; }
 
 :root {
-  --indigo:  #001E62;
-  --white:   #FFFFFF;
-  --orange:  #F9A21A;
-  --blue:    #57C0E9;
-  --green:   #22c55e;
-  --g1: #F4F5F7;
-  --g2: #E2E4E9;
-  --g3: #9BA3AF;
-  --g4: #6B7280;
-  --g5: #374151;
-  --ff-head: 'Barlow Condensed', sans-serif;
-  --ff-body: 'DM Sans', sans-serif;
-  --ff-mono: 'JetBrains Mono', monospace;
-  --r:    8px;
-  --r-lg: 14px;
-  --mw:   1280px;
+  --ink:    #14181f;
+  --ink-2:  #4b5260;
+  --ink-3:  #7a8190;
+  --bg:     #ffffff;
+  --bg-2:   #f5f6f8;
+  --line:   #e3e5ea;
+  --brand:  #001E62;
+  --accent: #F9A21A;
+
+  /* Readiness scale: one hue, darker = closer to done */
+  --s-ready:     #001E62;
+  --s-partial:   #3d5ba9;
+  --s-cube_work: #8fa6d9;
+  --s-data_work: #d3dcf0;
+  --s-unknown:   #c4c7ce;
+  --track:       #eef0f3;
+
+  --good: #0a7d0a;
+  --warn: #9a5b00;
+
+  --ff: Whitney, "Whitney SSm", Calibri, Verdana, system-ui, sans-serif;
+  --mw: 1240px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #eceef2; --ink-2: #b4bac6; --ink-3: #868d9b;
+    --bg: #12151b; --bg-2: #1a1e26; --line: #2b313c;
+    --brand: #9fb6f2;
+    --s-ready: #a9bef5; --s-partial: #6f8bd2; --s-cube_work: #435b98; --s-data_work: #2a3a63;
+    --s-unknown: #4a4f59; --track: #20252e;
+    --good: #5fd35f; --warn: #f5b84a;
+    color-scheme: dark;
+  }
 }
 
-html { font-size: 16px; scroll-behavior: smooth; }
-body {
-  background: var(--white);
-  color: var(--g5);
-  font-family: var(--ff-body);
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-}
+html { font-size: 15px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--ff); line-height: 1.45; }
+.wrap { max-width: var(--mw); margin: 0 auto; padding-inline: 20px; }
+button { font: inherit; color: inherit; }
 
-/* ── Header ── */
-header {
-  position: sticky; top: 0; z-index: 100;
-  background: rgba(255,255,255,0.95);
-  backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--g2);
-}
-.hdr {
-  max-width: var(--mw); margin: 0 auto; padding: 0 2rem;
-  height: 58px; display: flex; align-items: center; justify-content: space-between;
-  gap: 1rem;
-}
-.brand { display: flex; align-items: center; gap: 0.7rem; }
-.brand-mark {
-  width: 30px; height: 30px;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--indigo); flex-shrink: 0;
-}
-.brand-name {
-  font-family: var(--ff-head); font-size: 1rem; font-weight: 700;
-  letter-spacing: 0.07em; text-transform: uppercase; color: var(--indigo);
-}
-.hdr-right { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+/* Header */
+header { border-bottom: 1px solid var(--line); }
+.hdr { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-block: 22px 16px; }
+h1 { margin: 0; font-size: 1.6rem; font-weight: 700; color: var(--brand); letter-spacing: -0.01em; }
+.sub { margin: 4px 0 0; color: var(--ink-2); max-width: 70ch; }
+.updated { color: var(--ink-3); font-size: 0.85rem; white-space: nowrap; }
 
-/* ── Chips ── */
-.chip {
-  font-family: var(--ff-mono); font-size: 0.62rem; font-weight: 600;
-  letter-spacing: 0.04em; border-radius: 4px;
-  padding: 0.2rem 0.6rem; border: 1px solid; white-space: nowrap;
-}
-.c-blue   { color: #0c6b96;   border-color: rgba(87,192,233,0.5);   background: rgba(87,192,233,0.12);  }
-.c-orange { color: #92400e;   border-color: rgba(249,162,26,0.5);   background: rgba(249,162,26,0.12);  }
-.c-green  { color: #166534;   border-color: rgba(34,197,94,0.45);   background: rgba(34,197,94,0.10);   }
-.c-muted  { color: var(--g4); border-color: var(--g2);              background: var(--g1);              }
-.c-gold   { color: #92400e;   border-color: rgba(180,83,9,0.35);    background: rgba(251,191,36,0.12);  }
-.c-red    { color: #991b1b;   border-color: rgba(239,68,68,0.45);   background: rgba(239,68,68,0.09);   }
-.c-amber  { color: #78350f;   border-color: rgba(245,158,11,0.45);  background: rgba(245,158,11,0.09);  }
-.c-purple { color: #5b21b6;   border-color: rgba(139,92,246,0.45);  background: rgba(139,92,246,0.09);  }
+h2 { font-size: 1.15rem; margin: 0 0 4px; }
+section { padding-block: 26px 6px; }
+.section-note { color: var(--ink-2); margin: 0 0 14px; font-size: 0.93rem; }
 
-.pulse-dot {
-  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
-  background: #0c6b96; margin-right: 4px; vertical-align: middle;
-  animation: pulse 2.2s ease-in-out infinite;
-}
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.4; transform: scale(0.75); }
-}
+/* KPI tiles */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; padding-top: 20px; }
+.kpi { background: var(--bg-2); border-radius: 10px; padding: 14px 16px; }
+.kpi-label { font-size: 0.85rem; color: var(--ink-2); }
+.kpi-value { font-size: 2rem; font-weight: 700; line-height: 1.15; margin-top: 2px; }
+.kpi-value small { font-size: 1rem; font-weight: 400; color: var(--ink-2); }
+.kpi-foot { font-size: 0.82rem; color: var(--ink-3); margin-top: 6px; }
+.kpi .bar { margin-top: 10px; }
+.kpi-ms { font-size: 1.05rem; font-weight: 600; margin-top: 4px; line-height: 1.3; }
 
-/* ── Hero ── */
-.hero {
-  padding: 3.5rem 2rem 3rem;
-  border-bottom: 1px solid var(--g2);
-  background: var(--white);
-  position: relative; overflow: hidden;
-}
-.hero::before {
-  content: '';
-  position: absolute; inset: 0;
-  background-image:
-    linear-gradient(var(--g2) 1px, transparent 1px),
-    linear-gradient(90deg, var(--g2) 1px, transparent 1px);
-  background-size: 48px 48px;
-  opacity: 0.4; pointer-events: none;
-}
-.hero::after {
-  content: '';
-  position: absolute; top: -80px; right: -80px;
-  width: 360px; height: 360px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(249,162,26,0.07) 0%, transparent 70%);
-  pointer-events: none;
-}
-.hero-inner { max-width: var(--mw); margin: 0 auto; position: relative; }
-.hero-eyebrow {
-  display: inline-flex; align-items: center; gap: 0.45rem;
-  font-family: var(--ff-mono); font-size: 0.62rem; font-weight: 600;
-  letter-spacing: 0.12em; text-transform: uppercase; color: #0c6b96;
-  background: rgba(87,192,233,0.08); border: 1px solid rgba(87,192,233,0.25);
-  border-radius: 20px; padding: 0.28rem 0.9rem; margin-bottom: 1.4rem;
-}
-.hero-title {
-  font-family: var(--ff-head);
-  font-size: clamp(2.8rem, 6vw, 4.8rem);
-  font-weight: 800; color: var(--indigo);
-  line-height: 0.97; letter-spacing: -0.02em; margin-bottom: 1rem;
-}
-.hero-title-accent { color: var(--orange); }
-.hero-body {
-  font-size: 1rem; color: var(--g4); line-height: 1.78;
-  max-width: 680px; margin-bottom: 2rem;
-}
-.hero-layout {
-  display: flex; align-items: flex-start; gap: 2.5rem; margin-bottom: 2.5rem;
-}
-.hero-left { flex: 1; min-width: 0; }
-.hero-left .hero-body { margin-bottom: 0; }
-.hero-right {
-  display: flex; flex-direction: column; gap: 0.85rem;
-  width: 210px; flex-shrink: 0; padding-top: 0.25rem;
-}
-@media (max-width: 900px) {
-  .hero-layout { flex-direction: column; }
-  .hero-right { flex-direction: row; width: 100%; }
-}
-.summary-card {
-  background: var(--g1); border: 1px solid var(--g2);
-  border-radius: var(--r-lg); padding: 1.1rem 1.25rem;
-}
-.sc-pct {
-  font-family: var(--ff-head); font-size: 2.8rem; font-weight: 800;
-  color: var(--indigo); line-height: 1; margin-bottom: 0.15rem;
-}
-.sc-label {
-  font-family: var(--ff-mono); font-size: 0.58rem; font-weight: 600;
-  letter-spacing: 0.1em; text-transform: uppercase; color: var(--g3);
-  margin-bottom: 0.3rem;
-}
-.sc-sub { font-family: var(--ff-mono); font-size: 0.6rem; color: var(--g4); }
-.sc-track {
-  height: 3px; background: var(--g2); border-radius: 2px;
-  overflow: hidden; margin-top: 0.6rem;
-}
-.sc-fill { height: 100%; border-radius: 2px; }
+/* Stacked readiness bar */
+.bar { display: flex; gap: 2px; height: 8px; width: 100%; min-width: 90px; background: var(--track); border-radius: 4px; overflow: hidden; }
+.bar span { display: block; height: 100%; }
+.bar span:first-child { border-radius: 4px 0 0 4px; }
+.bar span:last-child  { border-radius: 0 4px 4px 0; }
+.bar span:only-child  { border-radius: 4px; }
+.sw-ready { background: var(--s-ready); }
+.sw-partial { background: var(--s-partial); }
+.sw-cube_work { background: var(--s-cube_work); }
+.sw-data_work { background: var(--s-data_work); }
+.sw-unset, .sw-unknown { background: repeating-linear-gradient(45deg, var(--s-unknown) 0 2px, transparent 2px 5px); }
+.sw-tableau_only { background: transparent; border: 1px dashed var(--ink-3); }
 
-/* ── Pipeline Bar ── */
-.pipeline-bar {
-  background: var(--white);
-  border-bottom: 1px solid var(--g2);
-  padding: 1.5rem 2rem;
+/* Legend + controls */
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.85rem; color: var(--ink-2); }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; }
+.controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.controls input, .controls select {
+  font: inherit; font-size: 0.9rem; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--bg); color: var(--ink);
 }
-.pipeline-bar-inner { max-width: var(--mw); margin: 0 auto; }
-.pipeline-bar-top {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 1.4rem;
-}
-.pipeline-bar-eyebrow {
-  font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
-  letter-spacing: 0.14em; text-transform: uppercase; color: var(--g3);
-}
-.glossary-btn {
-  display: inline-flex; align-items: center; gap: 0.4rem;
-  font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
-  letter-spacing: 0.06em; text-transform: uppercase; color: var(--white);
-  background: var(--indigo); border: 1px solid var(--indigo);
-  border-radius: 6px; padding: 0.35rem 0.8rem; cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-.glossary-btn:hover { background: #002b8a; border-color: #002b8a; }
-.gd-pipeline-track {
-  display: grid;
-  grid-template-columns: 1fr 28px 1fr 28px 1fr 28px 1fr 28px 1fr;
-  align-items: start;
-}
-.gd-pipe-step { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; }
-.gd-pipe-icon {
-  width: 44px; height: 44px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-}
-.ps-source .gd-pipe-icon { background: rgba(107,114,128,0.08); border: 1px solid rgba(107,114,128,0.22); color: #4B5563; }
-.ps-schema .gd-pipe-icon { background: rgba(249,162,26,0.09);  border: 1px solid rgba(249,162,26,0.28);  color: #92400e; }
-.ps-cube   .gd-pipe-icon { background: rgba(139,92,246,0.09);  border: 1px solid rgba(139,92,246,0.28);  color: #5b21b6; }
-.ps-metric .gd-pipe-icon { background: rgba(34,197,94,0.08);   border: 1px solid rgba(34,197,94,0.22);   color: #166534; }
-.ps-bi     .gd-pipe-icon { background: rgba(87,192,233,0.08);  border: 1px solid rgba(87,192,233,0.22);  color: #0c6b96; }
-.gd-pipe-label {
-  font-family: var(--ff-head); font-size: 0.85rem; font-weight: 700;
-  letter-spacing: 0.04em; text-transform: uppercase;
-  color: var(--indigo); line-height: 1; text-align: center;
-}
-.gd-pipe-sub {
-  font-family: var(--ff-mono); font-size: 0.53rem; color: var(--g3);
-  text-align: center; line-height: 1.3;
-}
-.gd-pipe-stat {
-  font-family: var(--ff-mono); font-size: 0.58rem; color: var(--g4);
-  text-align: center; line-height: 1.3; min-height: 1.2em;
-}
-.gd-pipe-arrow {
-  display: flex; justify-content: center; padding-top: 16px;
-  color: var(--g2);
-}
-.pipe-stat-chip {
-  display: inline-block; font-family: var(--ff-mono); font-size: 0.52rem;
-  font-weight: 600; border-radius: 3px; padding: 0.1rem 0.38rem;
-  margin: 0 0.1rem; border: 1px solid; white-space: nowrap;
-}
-.psc-source  { color: #374151; border-color: rgba(107,114,128,0.4);   background: rgba(107,114,128,0.08); }
-.psc-schema  { color: #92400e; border-color: rgba(249,162,26,0.45);   background: rgba(249,162,26,0.10);  }
-.psc-cube    { color: #5b21b6; border-color: rgba(139,92,246,0.45);   background: rgba(139,92,246,0.09);  }
-.psc-bi      { color: #0c6b96; border-color: rgba(87,192,233,0.45);   background: rgba(87,192,233,0.10);  }
-.psc-blocked { color: #991b1b; border-color: rgba(239,68,68,0.4);     background: rgba(239,68,68,0.09);   }
-.psc-pending { color: var(--g4); border-color: var(--g2);             background: var(--g1);              }
-.psc-done    { color: #166534; border-color: rgba(34,197,94,0.4);     background: rgba(34,197,94,0.09);   }
+.controls input { width: 240px; max-width: 100%; }
 
-/* ── Section wrapper ── */
-.sec-wrap { max-width: var(--mw); margin: 0 auto; }
-.sec-label {
-  font-family: var(--ff-mono); font-size: 0.62rem; font-weight: 600;
-  letter-spacing: 0.12em; text-transform: uppercase; color: var(--g3);
-  margin-bottom: 1.25rem;
-}
+/* Dashboard table */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+table { border-collapse: collapse; width: 100%; min-width: 820px; }
+th, td { text-align: left; padding: 10px 14px; vertical-align: middle; }
+thead th { font-size: 0.8rem; font-weight: 600; color: var(--ink-2); border-bottom: 1px solid var(--line); background: var(--bg-2); }
+tr.domain th { font-size: 0.82rem; font-weight: 700; color: var(--brand); text-transform: uppercase; letter-spacing: 0.04em; padding-top: 18px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+tr.domain th .dom-sum { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--ink-3); margin-left: 8px; }
+tr.dash td { border-bottom: 1px solid var(--line); }
+tr.dash:hover td { background: var(--bg-2); }
+.col-name { width: 30%; }
+.col-bar { width: 21%; }
+.col-stage { width: 18%; }
+.col-due { width: 10%; white-space: nowrap; }
+.name-btn { background: none; border: 0; padding: 0; text-align: left; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: baseline; }
+.name-btn .chev { color: var(--ink-3); font-size: 0.75rem; transition: transform 0.15s; display: inline-block; width: 10px; }
+.name-btn[aria-expanded="true"] .chev { transform: rotate(90deg); }
+.name-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; border-radius: 3px; }
+.match-hint { display: block; font-weight: 400; font-size: 0.8rem; color: var(--ink-3); margin-left: 18px; }
+.cell-bar { display: flex; flex-direction: column; gap: 5px; }
+.count { font-size: 0.85rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.count b { color: var(--ink); }
+.muted { color: var(--ink-3); }
 
-/* ── Progress columns ── */
-.sec-progress {
-  background: var(--g1);
-  padding: 2.75rem 2rem;
-  border-bottom: 1px solid var(--g2);
-}
-.progress-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 1.25rem;
-  align-items: start;
-}
-@media (max-width: 900px)  { .progress-grid { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 600px)  { .progress-grid { grid-template-columns: 1fr; } }
+/* Transition stage */
+.steps { display: flex; gap: 2px; }
+.steps span { width: 14px; height: 6px; border-radius: 3px; background: var(--track); }
+.steps span.on { background: var(--brand); }
+.stage-label { font-size: 0.85rem; margin-top: 5px; color: var(--ink-2); }
+.stage-label.done { color: var(--good); font-weight: 600; }
+.stage-label.warn { color: var(--warn); }
 
-.pcol {
-  background: var(--white);
-  border: 1px solid var(--g2);
-  border-radius: var(--r-lg);
-  overflow: hidden;
-}
-.pcol-head {
-  padding: 1rem 1.2rem 0.9rem;
-  border-bottom: 1px solid var(--g2);
-}
-.pcol-type {
-  font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
-  letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.45rem;
-}
-.pt-model   { color: #5b21b6; }
-.pt-measure { color: #166534; }
-.pt-view    { color: #0c6b96; }
-.pcol-score {
-  font-family: var(--ff-head); font-size: 1.9rem; font-weight: 800;
-  color: var(--indigo); line-height: 1; margin-bottom: 0.55rem;
-}
-.pcol-score-denom { font-size: 1.1rem; color: var(--g3); }
-.prog-track {
-  height: 5px; background: var(--g2); border-radius: 3px; overflow: hidden;
-}
-.prog-fill { height: 100%; border-radius: 3px; }
+/* Detail drawer */
+tr.detail td { background: var(--bg-2); border-bottom: 1px solid var(--line); padding: 16px 18px 20px 36px; }
+.detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 22px; }
+.detail h3 { font-size: 0.95rem; margin: 0 0 8px; }
+.grp { margin-bottom: 12px; }
+.grp-h { font-size: 0.82rem; font-weight: 600; color: var(--ink-2); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+.grp-h i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.grp ul { margin: 0; padding-left: 16px; font-size: 0.88rem; }
+.grp li { margin: 2px 0; }
+.grp li .use { color: var(--ink-3); }
+.checklist { list-style: none; padding: 0; margin: 0 0 4px; font-size: 0.88rem; }
+.checklist li { margin: 3px 0; }
+.checklist .tick { display: inline-block; width: 18px; color: var(--good); font-weight: 700; }
+.checklist .open { color: var(--ink-3); }
+.asana-link { font-size: 0.85rem; color: var(--brand); }
 
-.item-list { list-style: none; max-height: 420px; overflow-y: auto; padding: 0.4rem 0; }
-.item-list::-webkit-scrollbar { width: 4px; }
-.item-list::-webkit-scrollbar-track { background: transparent; }
-.item-list::-webkit-scrollbar-thumb { background: var(--g2); border-radius: 2px; }
+/* Timeline */
+.tl { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px 10px; overflow-x: auto; }
+.tl-inner { min-width: 720px; }
+.tl-row { display: grid; grid-template-columns: 180px 1fr; gap: 14px; align-items: start; padding: 8px 0; border-top: 1px solid var(--line); }
+.tl-row:first-child { border-top: 0; }
+.tl-label { font-size: 0.88rem; font-weight: 600; padding-top: 4px; }
+.tl-label small { display: block; font-weight: 400; color: var(--ink-3); }
+.tl-track { position: relative; height: 30px; }
+.tl-track::before { content: ""; position: absolute; left: 0; right: 0; top: 14px; border-top: 1px solid var(--line); }
+.tl-axis { position: relative; height: 20px; margin-left: 194px; font-size: 0.75rem; color: var(--ink-3); }
+.tl-axis span { position: absolute; top: 0; transform: translateX(-1px); padding-left: 4px; border-left: 1px solid var(--line); height: 20px; white-space: nowrap; }
+.tl-today { position: absolute; top: -4px; bottom: -4px; border-left: 2px solid var(--accent); }
+.tl-mark { position: absolute; top: 4px; width: 22px; height: 22px; margin-left: -11px; border: 0; background: none; padding: 0; cursor: default; }
+.tl-mark::before { content: ""; position: absolute; left: 5px; top: 5px; width: 12px; height: 12px; transform: rotate(45deg); background: var(--bg); border: 2px solid var(--brand); border-radius: 2px; }
+.tl-mark.done::before { background: var(--brand); }
+.tl-mark.dash::before { transform: none; border-radius: 50%; }
+.tl-mark:focus-visible { outline: 2px solid var(--brand); border-radius: 4px; }
+.tl-unsched { font-size: 0.8rem; color: var(--ink-3); margin-top: 2px; }
+.chip { display: inline-block; font-size: 0.75rem; padding: 1px 7px; border-radius: 10px; background: var(--bg-2); color: var(--ink-2); margin: 2px 3px 0 0; }
+.chip.done { text-decoration: line-through; }
+.tl-key { display: flex; gap: 18px; flex-wrap: wrap; font-size: 0.8rem; color: var(--ink-2); margin-top: 8px; }
+.tl-key i { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px; }
 
-/* Domain divider row inside item-list */
-.domain-div {
-  padding: 0.55rem 1.2rem 0.2rem;
-  font-family: var(--ff-mono); font-size: 0.54rem; font-weight: 600;
-  letter-spacing: 0.1em; text-transform: uppercase; color: var(--g3);
-  border-top: 1px solid var(--g2); margin-top: 0.25rem;
-}
-.domain-div:first-child { border-top: none; margin-top: 0; }
+details.alltable { margin-top: 14px; }
+details.alltable summary { cursor: pointer; color: var(--brand); font-size: 0.9rem; }
+details.alltable table { min-width: 560px; margin-top: 8px; font-size: 0.88rem; }
+details.alltable td, details.alltable th { padding: 6px 10px; border-bottom: 1px solid var(--line); }
 
-.il-row {
-  display: flex; align-items: center; gap: 0.55rem;
-  padding: 0.36rem 1.2rem;
-  transition: background 0.1s;
-}
-.il-row:hover { background: var(--g1); }
-.il-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.il-dot-done    { background: var(--green); }
-.il-dot-pending { background: transparent; border: 1.5px solid var(--g3); }
-.il-name {
-  font-family: var(--ff-mono); font-size: 0.67rem; color: var(--g5);
-  flex: 1; min-width: 0; word-break: break-word;
-}
-.il-row.is-pending .il-name { color: var(--g4); }
-.il-aside { display: flex; align-items: center; gap: 0.35rem; flex-shrink: 0; }
-.il-badge {
-  font-family: var(--ff-mono); font-size: 0.55rem; font-weight: 600;
-  border-radius: 3px; padding: 0.1rem 0.4rem; border: 1px solid;
-}
-.ilb-done    { color: #166534; border-color: rgba(34,197,94,0.4);  background: rgba(34,197,94,0.08);  }
-.ilb-pending { color: #92400e; border-color: rgba(249,162,26,0.45); background: rgba(249,162,26,0.09); }
-.ilb-blocked   { color: #991b1b; border-color: rgba(239,68,68,0.4);  background: rgba(239,68,68,0.07);  }
-.ilb-ready     { color: #92400e; border-color: rgba(249,162,26,0.45); background: rgba(249,162,26,0.09); }
-.ilb-available { color: #166534; border-color: rgba(34,197,94,0.5); background: rgba(34,197,94,0.12); font-weight: 600; }
-.il-meta     { font-family: var(--ff-mono); font-size: 0.55rem; color: var(--g3); }
+/* Definitions */
+.defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; font-size: 0.9rem; color: var(--ink-2); }
+.defs h3 { font-size: 0.92rem; color: var(--ink); margin: 0 0 4px; }
+.defs p, .defs ol { margin: 0; }
+.defs ol { padding-left: 18px; }
+footer { color: var(--ink-3); font-size: 0.82rem; padding-block: 26px 40px; }
 
-/* Topline chip in measures column */
-.il-topline {
-  font-family: var(--ff-mono); font-size: 0.52rem; font-weight: 700;
-  color: #0c6b96; border: 1px solid rgba(87,192,233,0.55);
-  background: rgba(87,192,233,0.13); border-radius: 3px;
-  padding: 0.1rem 0.38rem; white-space: nowrap;
-}
-.il-due { font-family: var(--ff-mono); font-size: 0.52rem; font-weight: 600; color: #0c6b96; white-space: nowrap; }
-
-/* ── View cards ── */
-.sec-cubes {
-  background: var(--white);
-  padding: 2.75rem 2rem;
-  border-bottom: 1px solid var(--g2);
-}
-.cube-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
-  gap: 1rem;
-}
-.domain-group-header {
-  font-family: var(--ff-mono); font-size: 0.62rem; font-weight: 700;
-  letter-spacing: 0.1em; text-transform: uppercase; color: var(--g3);
-  border-bottom: 1px solid var(--g2); padding-bottom: 0.4rem;
-  margin-bottom: 0.75rem;
-}
-.domain-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 1rem;
-}
-.cube-card {
-  border: 1px solid var(--g2);
-  border-radius: var(--r-lg);
-  padding: 1.2rem 1.35rem;
-  background: var(--white);
-  transition: box-shadow 0.15s, border-color 0.15s;
-  border-left-width: 3px;
-}
-.cube-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.07); }
-.cc-done    { border-left-color: var(--green); }
-.cc-blocked { border-left-color: #ef4444; }
-.cc-ready   { border-left-color: var(--orange); }
-
-.cc-top {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 0.75rem; margin-bottom: 0.55rem;
-}
-.cc-name {
-  font-family: var(--ff-head); font-size: 1.05rem; font-weight: 700;
-  color: var(--indigo); line-height: 1.2; word-break: break-word;
-}
-.cc-status { flex-shrink: 0; margin-top: 0.1rem; }
-
-/* Domain chip on view cards */
-.cc-domain {
-  font-family: var(--ff-mono); font-size: 0.57rem; font-weight: 600;
-  letter-spacing: 0.04em; border-radius: 3px; padding: 0.15rem 0.55rem;
-  background: rgba(87,192,233,0.1); color: #0c6b96;
-  border: 1px solid rgba(87,192,233,0.28); display: inline-block;
-  margin-bottom: 0.75rem;
-}
-
-.cc-metrics { margin-bottom: 0.85rem; }
-.cc-metrics-header {
-  display: flex; justify-content: space-between; align-items: baseline;
-  margin-bottom: 0.3rem;
-}
-.cc-metrics-label {
-  font-family: var(--ff-mono); font-size: 0.58rem; font-weight: 600;
-  letter-spacing: 0.08em; text-transform: uppercase; color: var(--g3);
-}
-.cc-metrics-count { font-family: var(--ff-mono); font-size: 0.58rem; color: var(--g4); }
-.cc-track { height: 4px; background: var(--g2); border-radius: 2px; overflow: hidden; }
-.cc-fill  { height: 100%; border-radius: 2px; }
-
-.cc-sub-list {
-  list-style: none; margin-top: 0.5rem;
-  display: flex; flex-direction: column; gap: 0.18rem;
-  max-height: 140px; overflow-y: auto; padding: 0 0 0.25rem;
-}
-.cc-sub-list::-webkit-scrollbar { width: 3px; }
-.cc-sub-list::-webkit-scrollbar-thumb { background: var(--g2); }
-.cc-sub-row {
-  display: flex; align-items: center; gap: 0.4rem;
-  font-family: var(--ff-mono); font-size: 0.62rem;
-}
-.cc-sub-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
-.cc-sub-done    .cc-sub-dot { background: var(--green); }
-.cc-sub-pending .cc-sub-dot { background: transparent; border: 1.5px solid var(--g3); }
-.cc-sub-done    .cc-sub-name { color: var(--g3); text-decoration: line-through; }
-.cc-sub-pending .cc-sub-name { color: var(--g5); }
-
-.cc-deps { border-top: 1px solid var(--g2); padding-top: 0.75rem; margin-top: 0.75rem; }
-.cc-deps-label {
-  font-family: var(--ff-mono); font-size: 0.58rem; font-weight: 600;
-  letter-spacing: 0.08em; text-transform: uppercase; color: var(--g3);
-  margin-bottom: 0.4rem;
-}
-.cc-dep-list { list-style: none; display: flex; flex-direction: column; gap: 0.2rem; }
-.cc-dep {
-  display: flex; align-items: center; gap: 0.4rem;
-  font-family: var(--ff-mono); font-size: 0.62rem;
-}
-.cc-dep-indicator { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-.dep-done    .cc-dep-indicator { background: var(--green); }
-.dep-pending .cc-dep-indicator { background: transparent; border: 1.5px solid #ef4444; }
-.dep-done    .cc-dep-name { color: var(--g3); text-decoration: line-through; }
-.dep-pending .cc-dep-name { color: var(--g5); font-weight: 600; }
-.cc-dep-type { font-size: 0.55rem; color: var(--g3); margin-left: auto; flex-shrink: 0; }
-.cc-no-deps { font-family: var(--ff-mono); font-size: 0.62rem; color: var(--g3); font-style: italic; }
-
-/* ── Filter bar ── */
-.cube-toolbar {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem;
-}
-.filter-bar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
-.search-input {
-  font-family: var(--ff-mono); font-size: 0.7rem;
-  border: 1px solid var(--g2); border-radius: var(--r);
-  padding: 0.35rem 0.8rem; outline: none;
-  background: var(--g1); color: var(--g5); width: 220px;
-  transition: border-color 0.15s, background 0.15s;
-}
-.search-input:focus { border-color: var(--blue); background: var(--white); }
-.search-input::placeholder { color: var(--g3); }
-.fchip-group { display: flex; gap: 0.3rem; flex-wrap: wrap; }
-.fchip {
-  font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
-  letter-spacing: 0.04em; border-radius: 4px;
-  padding: 0.25rem 0.65rem; border: 1px solid var(--g2);
-  background: transparent; color: var(--g4);
-  cursor: pointer; transition: all 0.12s; white-space: nowrap;
-}
-.fchip:hover { border-color: var(--g3); color: var(--g5); background: var(--g1); }
-.fchip.fc-active            { background: var(--indigo); color: var(--white); border-color: var(--indigo); }
-.fchip.fc-blocked.fc-active { background: #991b1b; border-color: #991b1b; color: var(--white); }
-.fchip.fc-pending.fc-active { background: #92400e; border-color: #92400e; color: var(--white); }
-.fchip.fc-topline.fc-active { background: #0c6b96; border-color: #0c6b96; color: var(--white); }
-.fchip.fc-done.fc-active    { background: #166534; border-color: #166534; color: var(--white); }
-.filter-count { font-family: var(--ff-mono); font-size: 0.6rem; color: var(--g3); white-space: nowrap; }
-.filter-clear-btn {
-  font-family: var(--ff-mono); font-size: 0.6rem; font-weight: 600;
-  border-radius: 4px; padding: 0.25rem 0.65rem;
-  border: 1px solid var(--g2); background: transparent; color: var(--g4);
-  cursor: pointer; transition: all 0.12s;
-}
-.filter-clear-btn:hover { background: var(--g2); color: var(--g5); }
-.fchip.fc-topline.fc-active { background: #92400e; border-color: #92400e; color: var(--white); }
-.il-row-click { cursor: pointer; }
-.il-row-click:hover { background: rgba(87,192,233,0.07); }
-.il-row-click.il-selected {
-  background: rgba(0,30,98,0.07);
-  box-shadow: inset 2px 0 0 var(--indigo);
-}
-
-/* ── Footer ── */
-footer {
-  background: var(--indigo);
-  border-top: 1px solid rgba(255,255,255,0.06);
-  padding: 1.1rem 2rem;
-}
-.footer-inner {
-  max-width: var(--mw); margin: 0 auto;
-  display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 0.5rem;
-}
-.footer-txt {
-  font-family: var(--ff-mono); font-size: 0.6rem;
-  letter-spacing: 0.08em; color: rgba(255,255,255,0.35);
-}
-
-/* ── Glossary Drawer ── */
-.glossary-overlay {
-  position: fixed; inset: 0; z-index: 300;
-  background: rgba(0,0,0,0.45); opacity: 0; pointer-events: none;
-  transition: opacity 0.25s;
-}
-.glossary-overlay.gd-open { opacity: 1; pointer-events: all; }
-.glossary-drawer {
-  position: fixed; top: 0; right: 0; bottom: 0;
-  width: min(480px, 90vw); background: var(--white); z-index: 400;
-  transform: translateX(100%);
-  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
-  overflow-y: auto; display: flex; flex-direction: column;
-  box-shadow: -8px 0 40px rgba(0,0,0,0.12);
-}
-.glossary-drawer.gd-open { transform: translateX(0); }
-body.gd-lock { overflow: hidden; }
-.gd-header {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 1rem; padding: 1.5rem 1.75rem 1.25rem;
-  border-bottom: 1px solid var(--g2);
-  position: sticky; top: 0; background: var(--white); z-index: 1;
-}
-.gd-title-group { flex: 1; min-width: 0; }
-.gd-eyebrow {
-  font-family: var(--ff-mono); font-size: 0.55rem; font-weight: 600;
-  letter-spacing: 0.12em; text-transform: uppercase; color: var(--g3);
-  display: block; margin-bottom: 0.3rem;
-}
-.gd-title {
-  font-family: var(--ff-head); font-size: 1.6rem; font-weight: 800;
-  color: var(--indigo); line-height: 1.1;
-}
-.gd-close-btn {
-  width: 32px; height: 32px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--g1); border: 1px solid var(--g2);
-  border-radius: 6px; cursor: pointer; color: var(--g4);
-  transition: background 0.12s, color 0.12s;
-}
-.gd-close-btn:hover { background: var(--g2); color: var(--g5); }
-.gd-body { padding: 1.5rem 1.75rem; display: flex; flex-direction: column; gap: 0.85rem; }
-.gd-term-card {
-  border: 1px solid var(--g2); border-left-width: 3px;
-  border-radius: var(--r-lg); padding: 1rem 1.2rem;
-}
-.gd-term-name {
-  font-family: var(--ff-head); font-size: 1.1rem; font-weight: 700;
-  color: var(--indigo); line-height: 1; margin-bottom: 0.3rem;
-}
-.gd-term-tag {
-  display: block; font-family: var(--ff-mono); font-size: 0.55rem;
-  font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--g3); margin-bottom: 0.5rem;
-}
-.gd-term-desc { font-family: var(--ff-body); font-size: 0.82rem; color: var(--g4); line-height: 1.65; }
-.gd-term-desc code {
-  font-family: var(--ff-mono); font-size: 0.85em;
-  background: var(--g1); padding: 0.1em 0.3em; border-radius: 3px;
-}
-
-/* ── Scroll reveal ── */
-.rev { opacity: 0; transform: translateY(14px);
-  transition: opacity 0.5s ease, transform 0.5s ease; }
-.rev.on { opacity: 1; transform: none; }
-.d1 { transition-delay: 0.06s; } .d2 { transition-delay: 0.12s; }
-.d3 { transition-delay: 0.18s; } .d4 { transition-delay: 0.24s; }
+/* Tooltip */
+#tip { position: fixed; z-index: 50; pointer-events: none; background: var(--ink); color: var(--bg); font-size: 0.82rem; line-height: 1.4; padding: 8px 10px; border-radius: 6px; max-width: 300px; box-shadow: 0 4px 14px rgba(0,0,0,0.18); }
+#tip b { font-weight: 700; }
+#tip .tr { display: flex; justify-content: space-between; gap: 14px; }
 </style>
 </head>
 <body>
 
-<!-- ── GLOSSARY OVERLAY + DRAWER ── -->
-<div class="glossary-overlay" id="glossary-overlay" aria-hidden="true"></div>
-<aside class="glossary-drawer" id="glossary-drawer" role="dialog" aria-modal="true" aria-label="Data Pipeline Glossary" aria-hidden="true">
-  <div class="gd-header">
-    <div class="gd-title-group">
-      <span class="gd-eyebrow">Reference</span>
-      <h2 class="gd-title">Data Pipeline Glossary</h2>
-    </div>
-    <button class="gd-close-btn" id="glossary-close-btn" aria-label="Close glossary">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-        <path d="M2 2L12 12M12 2L2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-      </svg>
-    </button>
-  </div>
-  <div class="gd-body">
-    <div class="gd-term-card" style="border-left-color:#F9A21A">
-      <div class="gd-term-name">Model</div>
-      <span class="gd-term-tag">dbt &middot; SQL transformation</span>
-      <p class="gd-term-desc">A dbt model is a SELECT statement saved as a <code>.sql</code> file. Models transform raw source data into clean, business-ready tables — dims, facts, and bridges — that power downstream metrics and dashboards.</p>
-    </div>
-    <div class="gd-term-card" style="border-left-color:#F9A21A">
-      <div class="gd-term-name">Dimension</div>
-      <span class="gd-term-tag">dim_* &middot; descriptive attributes</span>
-      <p class="gd-term-desc">Dimension models describe the &ldquo;who, what, where&rdquo; of your data — people, places, courses, and dates. They&rsquo;re the reference tables that fact models join to for context and filtering.</p>
-    </div>
-    <div class="gd-term-card" style="border-left-color:#F9A21A">
-      <div class="gd-term-name">Fact Table</div>
-      <span class="gd-term-tag">fct_* &middot; events and transactions</span>
-      <p class="gd-term-desc">Fact models capture the &ldquo;what happened&rdquo; — attendance events, assessment scores, staff observations. Each row is a measurable event, joined to dimensions for context.</p>
-    </div>
-    <div class="gd-term-card" style="border-left-color:#8b5cf6">
-      <div class="gd-term-name">Semantic Layer</div>
-      <span class="gd-term-tag">Cube</span>
-      <p class="gd-term-desc">The semantic layer sits between the data warehouse and BI tools. It defines business logic — joins, filters, and metric formulas — in one place so every tool sees consistent numbers.</p>
-    </div>
-    <div class="gd-term-card" style="border-left-color:#22c55e">
-      <div class="gd-term-name">Metric</div>
-      <span class="gd-term-tag">measure &middot; computed value</span>
-      <p class="gd-term-desc">A metric is a computed value defined in the semantic layer: attendance rate, assessment proficiency %, staff retention. <strong>Topline</strong> metrics are the headline numbers tracked at the org level.</p>
-    </div>
-    <div class="gd-term-card" style="border-left-color:#57C0E9">
-      <div class="gd-term-name">Next Gen Data Tools</div>
-      <span class="gd-term-tag">business intelligence &middot; LLMs &middot; apps</span>
-      <p class="gd-term-desc">Using a fully-defined set of dimensions, facts, and metrics, we create tools that users interact with directly. This is the final output — blocked until all upstream models and measures in its domain are complete.</p>
-    </div>
-  </div>
-</aside>
-
-<!-- ── HEADER ── -->
 <header>
-  <div class="hdr">
-    <div class="brand">
-      <div class="brand-mark">
-        <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-          <path d="M10 2L17 5.5V14.5L10 18L3 14.5V5.5L10 2Z" stroke="currentColor" stroke-width="1.4" fill="none"/>
-          <path d="M10 2V18M3 5.5L17 5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity="0.5"/>
-        </svg>
-      </div>
-      <span class="brand-name">Data Marts &amp; Semantic Layer</span>
+  <div class="wrap hdr">
+    <div>
+      <h1>Semantic layer: dashboard transition</h1>
+      <p class="sub">For each core Tableau dashboard: which of its metrics and dimensions are ready in Cube, and how far it is through the move to Cube.</p>
     </div>
-    <div class="hdr-right" id="hdr-stats"><!-- filled by JS --></div>
+    <div class="updated" id="updated"></div>
   </div>
 </header>
 
-<!-- ── HERO ── -->
-<section class="hero">
-  <div class="hero-inner">
-    <div class="hero-layout">
-      <div class="hero-left">
-        <div class="hero-eyebrow">
-          <span class="pulse-dot"></span>
-          Semantic Layer Build Progress
-        </div>
-        <h1 class="hero-title">
-          From Dashboards<br>to <span class="hero-title-accent">Metrics</span>
-        </h1>
-        <p class="hero-body rev d1">
-          Tracking migration of Tableau reporting views to dimension and fact models and semantic layer metrics. Metrics unlock once all cubes are complete; migrations unlock once all metrics are complete.
-        </p>
-      </div>
-      <div class="hero-right rev d2" id="summary-cards"><!-- filled by JS --></div>
-    </div>
-  </div>
-</section>
+<main class="wrap">
+  <div class="kpis" id="kpis"></div>
 
-<!-- ── PIPELINE BAR ── -->
-<div class="pipeline-bar">
-  <div class="pipeline-bar-inner">
-    <div class="pipeline-bar-top">
-      <span class="pipeline-bar-eyebrow">Data Pipeline</span>
-      <button class="glossary-btn" id="glossary-open-btn" aria-haspopup="dialog">
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-          <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.2"/>
-          <path d="M6.5 5.3v3.6M6.5 4h.01" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-        </svg>
-        Glossary
-      </button>
-    </div>
-    <div class="gd-pipeline-track">
-      <div class="gd-pipe-step ps-source">
-        <div class="gd-pipe-icon">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <rect x="2" y="2" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.9"/>
-            <rect x="11" y="2" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.55"/>
-            <rect x="2" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.55"/>
-            <rect x="11" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.3"/>
-          </svg>
-        </div>
-        <div class="gd-pipe-label">Tableau</div>
-        <div class="gd-pipe-sub">Dashboards</div>
-        <div class="gd-pipe-stat" id="pipe-stat-source"></div>
-      </div>
-      <div class="gd-pipe-arrow">
-        <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
-          <path d="M1 6H17M17 6L12 1M17 6L12 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <div class="gd-pipe-step ps-schema">
-        <div class="gd-pipe-icon">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.4" fill="none"/>
-            <path d="M3 7h14M7 7v10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <div class="gd-pipe-label">Models</div>
-        <div class="gd-pipe-sub">Dimensions + Facts</div>
-        <div class="gd-pipe-stat" id="pipe-stat-schema"></div>
-      </div>
-      <div class="gd-pipe-arrow">
-        <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
-          <path d="M1 6H17M17 6L12 1M17 6L12 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <div class="gd-pipe-step ps-cube">
-        <div class="gd-pipe-icon">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M10 2L17 5.5V14.5L10 18L3 14.5V5.5L10 2Z" stroke="currentColor" stroke-width="1.4" fill="none"/>
-            <path d="M10 2V18M3 5.5L17 5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity="0.5"/>
-          </svg>
-        </div>
-        <div class="gd-pipe-label">Semantic Layer</div>
-        <div class="gd-pipe-sub">Cube</div>
-        <div class="gd-pipe-stat" id="pipe-stat-cube"></div>
-      </div>
-      <div class="gd-pipe-arrow">
-        <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
-          <path d="M1 6H17M17 6L12 1M17 6L12 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <div class="gd-pipe-step ps-metric">
-        <div class="gd-pipe-icon">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M3 15L7 9L11 12L15 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="15" cy="5" r="1.5" fill="currentColor"/>
-          </svg>
-        </div>
-        <div class="gd-pipe-label">Metrics</div>
-        <div class="gd-pipe-sub">Topline + Domain</div>
-        <div class="gd-pipe-stat" id="pipe-stat-metric"></div>
-      </div>
-      <div class="gd-pipe-arrow">
-        <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
-          <path d="M1 6H17M17 6L12 1M17 6L12 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <div class="gd-pipe-step ps-bi">
-        <div class="gd-pipe-icon">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <rect x="2" y="4" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.4" fill="none"/>
-            <path d="M7 18H13M10 15V18" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-            <path d="M6 11V9M9 11V7M12 11V8M15 11V6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <div class="gd-pipe-label">Next Gen Tools</div>
-        <div class="gd-pipe-sub">LLMs, Apps, Dashboards, Self-Service</div>
-        <div class="gd-pipe-stat" id="pipe-stat-bi"></div>
+  <section aria-labelledby="dash-h">
+    <h2 id="dash-h">Dashboards</h2>
+    <p class="section-note">Select a dashboard to see its metrics, dimensions and transition checklist.</p>
+    <div class="toolbar">
+      <div class="legend" id="legend"></div>
+      <div class="controls">
+        <input type="search" id="q" placeholder="Search dashboards or metrics" aria-label="Search"/>
+        <select id="f-domain" aria-label="Domain"><option value="">All domains</option></select>
+        <select id="f-stage" aria-label="Transition stage">
+          <option value="">All stages</option>
+          <option value="not">Not started</option>
+          <option value="prog">In progress</option>
+          <option value="done">Fully transitioned</option>
+        </select>
       </div>
     </div>
-  </div>
-</div>
+    <div class="table-wrap">
+      <table id="dash-table">
+        <thead><tr>
+          <th class="col-name">Dashboard</th>
+          <th class="col-bar">Metrics ready</th>
+          <th class="col-bar">Dimensions ready</th>
+          <th class="col-stage">Transition stage</th>
+          <th class="col-due">Target</th>
+        </tr></thead>
+        <tbody id="dash-body"></tbody>
+      </table>
+    </div>
+    <p class="section-note" id="empty-note" hidden style="margin-top:10px">No dashboards match.</p>
+  </section>
 
-<!-- ── PROGRESS COLUMNS ── -->
-<div class="sec-progress">
-  <div class="sec-wrap">
-    <div class="sec-label rev">Cube &amp; Metric Progress</div>
-    <div class="progress-grid rev d1">
-      <div class="pcol" id="pcol-models"><!-- filled by JS --></div>
-      <div class="pcol" id="pcol-measures"><!-- filled by JS --></div>
-      <div class="pcol" id="pcol-views"><!-- filled by JS --></div>
+  <section aria-labelledby="tl-h">
+    <h2 id="tl-h">Timeline</h2>
+    <p class="section-note">Project milestones and dashboard target dates from Asana. Items without a due date are listed under each row.</p>
+    <div class="tl"><div class="tl-inner" id="timeline"></div></div>
+    <div class="tl-key">
+      <span><i style="border:2px solid var(--brand);transform:rotate(45deg);border-radius:2px"></i>Milestone</span>
+      <span><i style="background:var(--brand);transform:rotate(45deg);border-radius:2px"></i>Milestone done</span>
+      <span><i style="border:2px solid var(--brand);border-radius:50%"></i>Dashboard target</span>
+      <span><i style="border-left:2px solid var(--accent);width:2px"></i>Today</span>
     </div>
-  </div>
-</div>
+    <details class="alltable"><summary>All milestones as a table</summary><div style="overflow-x:auto"><table id="ms-table"></table></div></details>
+  </section>
 
-<!-- ── VIEW CARDS ── -->
-<div class="sec-cubes">
-  <div class="sec-wrap">
-    <div class="cube-toolbar rev">
-      <div class="sec-label" style="margin-bottom:0">Metrics by Domain</div>
-      <div class="filter-bar">
-        <input type="text" id="cube-search" class="search-input" placeholder="Search domains or measures&#8230;"/>
-        <div class="fchip-group" id="filter-chips">
-          <button class="fchip fc-active" data-status="all">All</button>
-          <button class="fchip fc-blocked" data-status="blocked">&#9650; Blocked</button>
-          <button class="fchip fc-pending" data-status="pending">Pending</button>
-          <button class="fchip fc-done" data-status="done">Done</button>
-        </div>
-        <button class="fchip fc-topline" id="topline-toggle">&#9733; Topline</button>
-        <span class="filter-count" id="filter-count"></span>
-        <button class="filter-clear-btn" id="filter-clear" style="display:none">Clear</button>
+  <section aria-labelledby="pl-h" id="pl-section">
+    <h2 id="pl-h">Outside the core set</h2>
+    <p class="section-note">In the Asana parking lot. Shown for reference, not counted in the totals above.</p>
+    <div class="table-wrap">
+      <table><thead><tr>
+        <th class="col-name">Dashboard</th><th class="col-bar">Metrics ready</th><th class="col-bar">Dimensions ready</th><th class="col-stage">Transition stage</th><th class="col-due">Target</th>
+      </tr></thead><tbody id="pl-body"></tbody></table>
+    </div>
+  </section>
+
+  <section aria-labelledby="def-h">
+    <h2 id="def-h">How to read this page</h2>
+    <div class="defs">
+      <div>
+        <h3>Ready</h3>
+        <p>A metric is ready when it ships in Cube today and returns production data. A dimension is ready when the catalog marks it as covered in Cube.</p>
+      </div>
+      <div>
+        <h3>Not ready yet</h3>
+        <p><b>Partly in Cube</b>: some of it exists in Cube. <b>Needs Cube work</b>: the data is in a mart and needs adding to Cube. <b>Needs data work first</b>: the data has to be built in dbt before Cube work can start. Dimensions marked <b>stays in Tableau</b> are display helpers and are not counted.</p>
+      </div>
+      <div>
+        <h3>Transition stage</h3>
+        <ol id="def-steps"></ol>
+      </div>
+      <div>
+        <h3>Fully transitioned</h3>
+        <p>The dashboard is launched on Cube <b>and</b> every one of its metrics is ready. A launched dashboard with open metrics is flagged.</p>
       </div>
     </div>
-    <div class="cube-grid rev d1" id="cube-grid"><!-- filled by JS --></div>
-  </div>
-</div>
+  </section>
+</main>
 
-<!-- ── FOOTER ── -->
-<footer>
-  <div class="footer-inner">
-    <span class="footer-txt">Data Marts &amp; Semantic Layer &mdash; KTAF</span>
-    <span class="footer-txt" id="footer-updated"></span>
-  </div>
-</footer>
+<footer class="wrap">Read from the Asana project “Data Marts + Semantic Layer” every 4 hours. Shows names, counts and statuses only.</footer>
+
+<div id="tip" role="tooltip" hidden></div>
 
 <script src="data.js"></script>
 <script>
-// data loaded from data.js
-
-// ── Parse ──────────────────────────────────────────────────────────────────
-const nodes   = ELEMENTS.filter(e => e.data);
-const nodeMap = Object.fromEntries(nodes.map(n => [n.data.id, n.data]));
-
-const models   = nodes.filter(n => n.data.type === 'model');
-const measures = nodes.filter(n => n.data.type === 'measure');
-const views    = nodes.filter(n => n.data.type === 'dashboard');
-
-// ── Helpers ────────────────────────────────────────────────────────────────
-function pct(done, total) { return total ? Math.round(done / total * 100) : 0; }
-
-function fmtDate(iso) {
-  if (!iso) return '';
-  const [y, m, d] = iso.split('-');
-  return `${+m}/${+d}/${y.slice(2)}`;
-}
-
-function groupByDomain(items) {
-  const out = {};
-  items.forEach(n => {
-    const d = n.data.domain || 'Other';
-    if (!out[d]) out[d] = [];
-    out[d].push(n);
-  });
-  return out;
-}
-
-function progBar(done, total, color) {
-  return `<div class="prog-track"><div class="prog-fill" style="width:${pct(done,total)}%;background:${color}"></div></div>`;
-}
-
-// ── Header stat chips ──────────────────────────────────────────────────────
-
-// ── Summary cards ──────────────────────────────────────────────────────────
-const modelsPct   = pct(STATS.models_done,   STATS.models_total);
-const measuresPct = pct(STATS.measures_done, STATS.measures_total);
-const toplinePct  = pct(STATS.topline_done,  STATS.topline_total);
-
-document.getElementById('summary-cards').innerHTML = `
-  <div class="summary-card">
-    <div class="sc-pct">${modelsPct}%</div>
-    <div class="sc-label">Cubes</div>
-    <div class="sc-sub">${STATS.models_done}/${STATS.models_total} complete</div>
-    <div class="sc-track"><div class="sc-fill" style="width:${modelsPct}%;background:#F9A21A"></div></div>
-  </div>
-  <div class="summary-card">
-    <div class="sc-pct">${measuresPct}%</div>
-    <div class="sc-label">All Metrics</div>
-    <div class="sc-sub">${STATS.measures_done}/${STATS.measures_total} complete</div>
-    <div class="sc-track"><div class="sc-fill" style="width:${measuresPct}%;background:#8b5cf6"></div></div>
-  </div>
-  <div class="summary-card">
-    <div class="sc-pct">${toplinePct}%</div>
-    <div class="sc-label">Topline Metrics</div>
-    <div class="sc-sub">${STATS.topline_done}/${STATS.topline_total} complete</div>
-    <div class="sc-track"><div class="sc-fill" style="width:${toplinePct}%;background:#8b5cf6"></div></div>
-  </div>
-`;
-
-// ── Pipeline stats ─────────────────────────────────────────────────────────
-const measuresDoneCount    = measures.filter(n => n.data.status === 'complete').length;
-const measuresBlockedCount = measures.filter(n => n.data.status === 'blocked').length;
-const measuresPendingCount = measures.filter(n => n.data.status === 'pending').length;
-
-document.getElementById('pipe-stat-source').textContent = '';
-
-document.getElementById('pipe-stat-schema').textContent = '';
-
-document.getElementById('pipe-stat-cube').innerHTML =
-  STATS.models_done === STATS.models_total
-    ? `<span class="pipe-stat-chip psc-done">${STATS.models_done}/${STATS.models_total} done</span>`
-    : `<span class="pipe-stat-chip psc-cube">${STATS.models_done}/${STATS.models_total} done</span>`;
-
-document.getElementById('pipe-stat-metric').innerHTML =
-  measuresDoneCount === measures.length
-    ? `<span class="pipe-stat-chip psc-done">${measuresDoneCount}/${measures.length} done</span>`
-    : `<span class="pipe-stat-chip psc-done">${measuresDoneCount}/${measures.length} done</span>`;
-
-document.getElementById('pipe-stat-bi').innerHTML =
-  STATS.dashboards_done === STATS.dashboards_total
-    ? `<span class="pipe-stat-chip psc-done">${STATS.dashboards_done}/${STATS.dashboards_total} migrated</span>`
-    : `<span class="pipe-stat-chip psc-bi">${STATS.dashboards_done}/${STATS.dashboards_total} migrated</span>`;
-
-// ── Progress column renderer (with domain grouping) ────────────────────────
-function renderPcol(id, typeLabel, typeClass, color, items, opts) {
-  opts = opts || {};
-  const done  = items.filter(n => n.data.status === 'complete').length;
-  const total = items.length;
-
-  const groups  = groupByDomain(items);
-  const domains = Object.keys(groups).sort((a, b) => {
-    if (!opts.sortDomainsByDue) return a.localeCompare(b);
-    const earliest = grp => grp.reduce((min, n) => {
-      const d = n.data.due_on; return d && (!min || d < min) ? d : min;
-    }, '');
-    const ad = earliest(groups[a]), bd = earliest(groups[b]);
-    if (ad && bd) return ad.localeCompare(bd) || a.localeCompare(b);
-    if (ad) return -1; if (bd) return 1;
-    return a.localeCompare(b);
-  });
-
-  const rows = domains.map((domain, di) => {
-    let domItems = [...groups[domain]];
-
-    const byDue = (a, b) => {
-      const ad = a.data.due_on, bd = b.data.due_on;
-      if (ad && !bd) return -1; if (!ad && bd) return 1;
-      if (ad && bd && ad !== bd) return ad.localeCompare(bd);
-      return 0;
-    };
-    if (opts.toplineFirst) {
-      domItems.sort((a, b) => {
-        const due = byDue(a, b); if (due !== 0) return due;
-        const at = a.data.is_topline ? 0 : 1, bt = b.data.is_topline ? 0 : 1;
-        if (at !== bt) return at - bt;
-        const ak = a.data.status === 'complete' ? 0 : 1;
-        const bk = b.data.status === 'complete' ? 0 : 1;
-        return ak !== bk ? ak - bk : a.data.id.localeCompare(b.data.id);
-      });
-    } else {
-      domItems.sort((a, b) => {
-        const due = byDue(a, b); if (due !== 0) return due;
-        const ak = a.data.status === 'complete' ? 0 : 1;
-        const bk = b.data.status === 'complete' ? 0 : 1;
-        return ak !== bk ? ak - bk : a.data.id.localeCompare(b.data.id);
-      });
-    }
-
-    const divClass = di === 0 ? 'domain-div' : 'domain-div';
-    const itemRows = domItems.map(n => {
-      const d   = n.data;
-      const ok  = d.status === 'complete';
-
-      let badge;
-      if (opts.getBadge) {
-        badge = opts.getBadge(d);
-      } else {
-        let cls, lbl;
-        if (ok)           { cls = 'ilb-done';      lbl = 'done'; }
-        else if (d.due_on){ cls = 'ilb-available';  lbl = `available: ${fmtDate(d.due_on)}`; }
-        else if (d.status === 'blocked') { cls = 'ilb-blocked'; lbl = 'blocked'; }
-        else              { cls = 'ilb-pending';   lbl = 'pending'; }
-        badge = `<span class="il-badge ${cls}">${lbl}</span>`;
-      }
-
-      const toplineHtml = d.is_topline ? '<span class="il-topline">&#9733; topline</span>' : '';
-      const clickCls    = opts.clickable ? ' il-row-click' : '';
-      const dataAttr    = opts.clickable ? ` data-id="${d.id.replace(/"/g, '&quot;')}"` : '';
-
-      return `<li class="il-row${clickCls} ${ok ? '' : 'is-pending'}"${dataAttr}>
-        <span class="il-dot ${ok ? 'il-dot-done' : 'il-dot-pending'}"></span>
-        <span class="il-name" title="${d.id}">${d.id}</span>
-        <span class="il-aside">${toplineHtml}${badge}</span>
-      </li>`;
-    }).join('');
-
-    return `<li class="${divClass}">${domain}</li>${itemRows}`;
-  }).join('');
-
-  document.getElementById(id).innerHTML = `
-    <div class="pcol-head">
-      <div class="pcol-type ${typeClass}">${typeLabel}</div>
-      <div class="pcol-score">${done}<span class="pcol-score-denom">/${total}</span></div>
-      ${progBar(done, total, color)}
-    </div>
-    <ul class="item-list">${rows}</ul>
-  `;
-}
-
-renderPcol('pcol-models', 'Cubes', 'pt-model', '#8b5cf6', models, { sortDomainsByDue: true });
-
-renderPcol('pcol-measures', 'Metrics', 'pt-measure', '#22c55e', measures, {
-  toplineFirst: true, sortDomainsByDue: true,
-});
-
-renderPcol('pcol-views', 'Migrations Complete', 'pt-view', '#57C0E9', views, {
-  getBadge: d => {
-    if (d.status === 'complete') return `<span class="il-badge ilb-done">done</span>`;
-    if (d.status === 'blocked')  return `<span class="il-badge ilb-blocked">blocked</span>`;
-    return `<span class="il-badge ilb-pending">pending</span>`;
-  },
-});
-
-// ── Domain measure cards ──────────────────────────────────────────────────
-// One card per domain; each lists all measures for that domain.
-
-// Group measures by domain, sorted alpha within each domain
-// (topline first, then done before pending, then alpha)
-const measuresByDomain = {};
-measures.forEach(n => {
-  const domain = n.data.domain || 'Other';
-  if (!measuresByDomain[domain]) measuresByDomain[domain] = [];
-  measuresByDomain[domain].push(n);
-});
-
-const domainCardHtml = Object.keys(measuresByDomain).sort().map(domain => {
-  const domMeasures = [...measuresByDomain[domain]].sort((a, b) => {
-    const ad = a.data.due_on, bd = b.data.due_on;
-    if (ad && !bd) return -1; if (!ad && bd) return 1;
-    if (ad && bd && ad !== bd) return ad.localeCompare(bd);
-    const at = a.data.is_topline ? 0 : 1, bt = b.data.is_topline ? 0 : 1;
-    if (at !== bt) return at - bt;
-    const ak = a.data.status === 'complete' ? 0 : 1;
-    const bk = b.data.status === 'complete' ? 0 : 1;
-    return ak !== bk ? ak - bk : a.data.id.localeCompare(b.data.id);
-  });
-
-  const done  = domMeasures.filter(n => n.data.status === 'complete').length;
-  const total = domMeasures.length;
-  const mp    = pct(done, total);
-
-  // Domain state: done if all complete, blocked if any blocked, else ready
-  let stateKey, cardCls, statusHtml;
-  if (done === total) {
-    stateKey   = 'done';
-    cardCls    = 'cube-card cc-done';
-    statusHtml = `<span class="chip c-green">&#10003; ${done}/${total} done</span>`;
-  } else if (domMeasures.some(n => n.data.status === 'blocked')) {
-    stateKey   = 'blocked';
-    cardCls    = 'cube-card cc-blocked';
-    statusHtml = `<span class="chip c-red">${done}/${total} done</span>`;
-  } else {
-    stateKey   = 'pending';
-    cardCls    = 'cube-card cc-ready';
-    statusHtml = `<span class="chip c-gold">${done}/${total} done</span>`;
-  }
-
-  const rows = domMeasures.map(n => {
-    const d  = n.data;
-    const ok = d.status === 'complete';
-    let cls2, lbl2;
-    if (ok)            { cls2 = 'ilb-done';      lbl2 = 'done'; }
-    else if (d.due_on) { cls2 = 'ilb-available';  lbl2 = `available: ${fmtDate(d.due_on)}`; }
-    else if (d.status === 'blocked') { cls2 = 'ilb-blocked'; lbl2 = 'blocked'; }
-    else               { cls2 = 'ilb-pending';   lbl2 = 'pending'; }
-    const toplineHtml = d.is_topline ? '<span class="il-topline">&#9733; topline</span>' : '';
-    return `<li class="il-row ${ok ? '' : 'is-pending'}" data-topline="${d.is_topline ? 'true' : 'false'}">
-      <span class="il-dot ${ok ? 'il-dot-done' : 'il-dot-pending'}"></span>
-      <span class="il-name">${d.id}</span>
-      <span class="il-aside">${toplineHtml}<span class="il-badge ${cls2}">${lbl2}</span></span>
-    </li>`;
-  }).join('');
-
-  const safeDomain = domain.replace(/"/g, '&quot;');
-  return `<div class="${cardCls}" data-name="${safeDomain}" data-state="${stateKey}">
-    <div class="cc-top">
-      <div class="cc-name">${domain}</div>
-      <div class="cc-status">${statusHtml}</div>
-    </div>
-    <div class="cc-track" style="margin-bottom:0.75rem"><div class="cc-fill" style="width:${mp}%;background:#ef4444"></div></div>
-    <ul class="item-list" style="max-height:260px">${rows}</ul>
-  </div>`;
-}).join('');
-
-document.getElementById('cube-grid').innerHTML = domainCardHtml
-  || '<p style="color:var(--g3);font-family:var(--ff-mono);font-size:0.75rem">No measures found.</p>';
-
-// ── Filter & multiselect ───────────────────────────────────────────────────
-const selectedIds = new Set();
-
-function applyFilter() {
-  const query        = document.getElementById('cube-search').value.toLowerCase().trim();
-  const status       = document.querySelector('#filter-chips .fchip.fc-active').dataset.status;
-  const toplineOnly  = document.getElementById('topline-toggle').classList.contains('fc-active');
-  const total        = Object.keys(measuresByDomain).length;
-  let shown          = 0;
-
-  document.querySelectorAll('#cube-grid .cube-card').forEach(card => {
-    const name  = card.dataset.name;
-    const state = card.dataset.state;
-    const domainMatchesQuery = !query || name.toLowerCase().includes(query);
-
-    // Show/hide individual rows based on topline toggle and search query
-    card.querySelectorAll('.il-row').forEach(row => {
-      const toplineOk  = !toplineOnly || row.dataset.topline === 'true';
-      const measureName = row.querySelector('.il-name').textContent.toLowerCase();
-      const searchOk   = domainMatchesQuery || !query || measureName.includes(query);
-      row.style.display = toplineOk && searchOk ? '' : 'none';
-    });
-
-    const hasVisibleRows = [...card.querySelectorAll('.il-row')].some(r => r.style.display !== 'none');
-    const matchQ = hasVisibleRows;
-    const matchS = status === 'all' || state === status;
-    const visible = matchQ && matchS;
-    card.style.display = visible ? '' : 'none';
-    if (visible) shown++;
-  });
-
-  document.getElementById('filter-count').textContent =
-    shown < total ? `${shown} of ${total}` : `${total} total`;
-
-  const hasClear = query || status !== 'all' || toplineOnly;
-  document.getElementById('filter-clear').style.display = hasClear ? '' : 'none';
-}
-
-document.querySelectorAll('#filter-chips .fchip').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('#filter-chips .fchip').forEach(b => b.classList.remove('fc-active'));
-    btn.classList.add('fc-active');
-    applyFilter();
-  });
-});
-
-document.getElementById('cube-search').addEventListener('input', () => {
-  applyFilter();
-});
-
-document.getElementById('topline-toggle').addEventListener('click', () => {
-  document.getElementById('topline-toggle').classList.toggle('fc-active');
-  applyFilter();
-});
-
-document.getElementById('filter-clear').addEventListener('click', () => {
-  document.getElementById('cube-search').value = '';
-  document.querySelectorAll('#filter-chips .fchip').forEach(b => b.classList.remove('fc-active'));
-  document.querySelector('#filter-chips .fchip[data-status="all"]').classList.add('fc-active');
-  document.getElementById('topline-toggle').classList.remove('fc-active');
-  applyFilter();
-});
-
-
-
-applyFilter();
-
-// ── Footer timestamp ─────────────────────────────────────────────────────────
-document.getElementById('footer-updated').textContent = 'Last updated: ' + LAST_UPDATED;
-
-// ── Scroll reveal ──────────────────────────────────────────────────────────
-const revObs = new IntersectionObserver(entries => {
-  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('on'); });
-}, { threshold: 0.05 });
-document.querySelectorAll('.rev').forEach(el => revObs.observe(el));
-
-// ── Glossary drawer ────────────────────────────────────────────────────────
 (function () {
-  const drawer   = document.getElementById('glossary-drawer');
-  const overlay  = document.getElementById('glossary-overlay');
-  const openBtn  = document.getElementById('glossary-open-btn');
-  const closeBtn = document.getElementById('glossary-close-btn');
+  const STATUS = {
+    ready:        "Ready in Cube",
+    partial:      "Partly in Cube",
+    cube_work:    "Needs Cube work",
+    data_work:    "Needs data work first",
+    unset:        "Status not set",
+    unknown:      "Status unclear",
+    tableau_only: "Stays in Tableau",
+  };
+  const ORDER = ["ready", "partial", "cube_work", "data_work", "unset", "unknown"];
+  const PHASES = { 0: "Governance", 1: "Domain delivery", 2: "Enablement and support",
+                   3: "Delivery platform", 4: "Team capacity", 5: "Sustainment" };
+  const STEPS = DATA.checklist_steps;
 
-  function openDrawer() {
-    drawer.classList.add('gd-open');
-    overlay.classList.add('gd-open');
-    document.body.classList.add('gd-lock');
-    drawer.setAttribute('aria-hidden', 'false');
-    closeBtn.focus();
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const parseDate = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+  const fmtDate = (s, withYear) => s ? parseDate(s).toLocaleDateString(undefined, withYear ? { month: "short", day: "numeric", year: "numeric" } : { month: "short", day: "numeric" }) : "";
+
+  // ── Derived numbers ─────────────────────────────────────────────
+  function tally(items) {
+    const c = {}; ORDER.forEach((k) => (c[k] = 0));
+    let total = 0;
+    items.forEach((it) => { if (it.status === "tableau_only") return; c[it.status] = (c[it.status] || 0) + 1; total++; });
+    return { c, total, ready: c.ready };
+  }
+  function stageInfo(d) {
+    if (d.transitioned) return { key: "done", label: "Fully transitioned", cls: "done" };
+    if (d.launched) return { key: "prog", label: "Launched · metrics still open", cls: "warn" };
+    if (!d.has_checklist || d.stage === 0) return { key: "not", label: "Not started", cls: "" };
+    return { key: "prog", label: STEPS[d.stage - 1], cls: "" };
   }
 
-  function closeDrawer() {
-    drawer.classList.remove('gd-open');
-    overlay.classList.remove('gd-open');
-    document.body.classList.remove('gd-lock');
-    drawer.setAttribute('aria-hidden', 'true');
-    openBtn.focus();
+  // ── Building blocks ─────────────────────────────────────────────
+  function bar(t, kind) {
+    if (!t.total) return '<div class="bar" aria-hidden="true"></div>';
+    const segs = ORDER.filter((k) => t.c[k]).map((k) => `<span class="sw-${k}" style="width:${(t.c[k] / t.total) * 100}%"></span>`).join("");
+    const tipRows = ORDER.filter((k) => t.c[k]).map((k) => `${STATUS[k]}|${t.c[k]}`).join(";");
+    return `<div class="bar" tabindex="0" data-tip="${esc(kind)}" data-rows="${esc(tipRows)}" aria-label="${t.ready} of ${t.total} ${kind} ready">${segs}</div>`;
+  }
+  function countText(t, noun) {
+    if (!t.total) return `<span class="count muted">No ${noun} listed</span>`;
+    return `<span class="count"><b>${t.ready}</b> of ${t.total}</span>`;
+  }
+  function steps(d) {
+    return `<div class="steps" aria-hidden="true">${STEPS.map((_, i) => `<span class="${d.checklist[i] ? "on" : ""}"></span>`).join("")}</div>`;
+  }
+  function grouped(items, isDim) {
+    const keys = [...ORDER, "tableau_only"];
+    return keys.filter((k) => items.some((i) => i.status === k)).map((k) => {
+      const list = items.filter((i) => i.status === k)
+        .map((i) => `<li>${esc(i.name)}${isDim && i.use ? ` <span class="use">· ${esc(i.use)}</span>` : ""}</li>`).join("");
+      return `<div class="grp"><div class="grp-h"><i class="sw-${k}"></i>${STATUS[k]} (${items.filter((i) => i.status === k).length})</div><ul>${list}</ul></div>`;
+    }).join("") || '<p class="muted" style="margin:0">None listed.</p>';
+  }
+  function detail(d) {
+    const ck = d.has_checklist
+      ? `<ul class="checklist">${STEPS.map((s, i) => `<li><span class="tick">${d.checklist[i] ? "✓" : ""}</span><span class="${d.checklist[i] ? "" : "open"}">${esc(s)}</span></li>`).join("")}</ul>`
+      : '<p class="muted" style="margin:0 0 6px">No transition checklist yet.</p>';
+    return `<div class="detail-grid">
+      <div class="detail"><h3>Metrics</h3>${grouped(d.measures, false)}</div>
+      <div class="detail"><h3>Dimensions</h3>${grouped(d.dimensions, true)}</div>
+      <div class="detail"><h3>Transition checklist</h3>${ck}
+        <a class="asana-link" href="https://app.asana.com/0/0/${esc(d.gid)}" target="_blank" rel="noopener">Open in Asana ↗</a></div>
+    </div>`;
+  }
+  function row(d, hint) {
+    const st = stageInfo(d);
+    const m = tally(d.measures), dm = tally(d.dimensions);
+    return `<tr class="dash" data-gid="${esc(d.gid)}">
+      <td><button class="name-btn" aria-expanded="false" aria-controls="det-${esc(d.gid)}"><span class="chev">▶</span><span>${esc(d.name)}</span></button>${hint ? `<span class="match-hint">${esc(hint)}</span>` : ""}</td>
+      <td><div class="cell-bar">${bar(m, "metrics")}${countText(m, "metrics")}</div></td>
+      <td><div class="cell-bar">${bar(dm, "dimensions")}${countText(dm, "dimensions")}</div></td>
+      <td>${steps(d)}<div class="stage-label ${st.cls}">${st.cls === "done" ? "✓ " : st.cls === "warn" ? "⚠ " : ""}${esc(st.label)}</div></td>
+      <td>${d.due ? fmtDate(d.due, true) : '<span class="muted">Not set</span>'}</td>
+    </tr>
+    <tr class="detail" id="det-${esc(d.gid)}" hidden><td colspan="5">${detail(d)}</td></tr>`;
   }
 
-  openBtn.addEventListener('click', openDrawer);
-  closeBtn.addEventListener('click', closeDrawer);
-  overlay.addEventListener('click', closeDrawer);
+  // ── KPIs ────────────────────────────────────────────────────────
+  function renderKpis() {
+    const ds = DATA.dashboards;
+    const m = tally(ds.flatMap((d) => d.measures));
+    const dm = tally(ds.flatMap((d) => d.dimensions));
+    const done = ds.filter((d) => d.transitioned).length;
+    const started = ds.filter((d) => stageInfo(d).key === "prog").length;
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const next = DATA.milestones.filter((x) => !x.done && x.due && x.due >= todayStr).sort((a, b) => a.due.localeCompare(b.due))[0];
+    const unsched = DATA.milestones.filter((x) => !x.done && !x.due).length;
+    $("#kpis").innerHTML = `
+      <div class="kpi"><div class="kpi-label">Fully transitioned</div>
+        <div class="kpi-value">${done} <small>of ${ds.length} dashboards</small></div>
+        <div class="kpi-foot">${started} in progress · ${ds.length - done - started} not started</div></div>
+      <div class="kpi"><div class="kpi-label">Metrics ready in Cube</div>
+        <div class="kpi-value">${m.ready} <small>of ${m.total}</small></div>
+        ${bar(m, "metrics")}<div class="kpi-foot">Counted per dashboard, so a metric used twice counts twice</div></div>
+      <div class="kpi"><div class="kpi-label">Dimensions ready in Cube</div>
+        <div class="kpi-value">${dm.ready} <small>of ${dm.total}</small></div>
+        ${bar(dm, "dimensions")}<div class="kpi-foot">Counted per dashboard; Tableau-only helpers excluded</div></div>
+      <div class="kpi"><div class="kpi-label">Next milestone</div>
+        ${next ? `<div class="kpi-ms">${esc(next.code)} ${esc(next.name)}</div><div class="kpi-foot">Due ${fmtDate(next.due, true)}</div>`
+               : `<div class="kpi-ms muted">None scheduled</div>`}
+        <div class="kpi-foot">${unsched} open milestones have no due date yet</div></div>`;
+  }
 
-  document.addEventListener('keydown', function (e) {
-    if (!drawer.classList.contains('gd-open')) return;
-    if (e.key === 'Escape') { closeDrawer(); return; }
-    if (e.key === 'Tab') {
-      const focusable = Array.from(drawer.querySelectorAll(
-        'button, [href], input, select, [tabindex]:not([tabindex="-1"])'
-      ));
-      if (!focusable.length) return;
-      const first = focusable[0], last = focusable[focusable.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault(); last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault(); first.focus();
-      }
+  // ── Dashboard table ─────────────────────────────────────────────
+  function matchHint(d, q) {
+    if (!q) return { ok: true, hint: "" };
+    if (d.name.toLowerCase().includes(q) || d.domain.toLowerCase().includes(q)) return { ok: true, hint: "" };
+    const mm = d.measures.filter((x) => x.name.toLowerCase().includes(q)).length;
+    const dd = d.dimensions.filter((x) => x.name.toLowerCase().includes(q)).length;
+    if (!mm && !dd) return { ok: false };
+    const parts = [];
+    if (mm) parts.push(`${mm} metric${mm > 1 ? "s" : ""}`);
+    if (dd) parts.push(`${dd} dimension${dd > 1 ? "s" : ""}`);
+    return { ok: true, hint: `Matches ${parts.join(" and ")}` };
+  }
+  function renderTable() {
+    const q = $("#q").value.trim().toLowerCase();
+    const fd = $("#f-domain").value, fs = $("#f-stage").value;
+    const domains = [...new Set(DATA.dashboards.map((d) => d.domain))];
+    let html = "", shown = 0;
+    domains.forEach((dom) => {
+      if (fd && fd !== dom) return;
+      const rows = DATA.dashboards.filter((d) => d.domain === dom).map((d) => ({ d, mh: matchHint(d, q) }))
+        .filter(({ d, mh }) => mh.ok && (!fs || stageInfo(d).key === fs));
+      if (!rows.length) return;
+      shown += rows.length;
+      const all = DATA.dashboards.filter((d) => d.domain === dom);
+      const m = tally(all.flatMap((d) => d.measures));
+      html += `<tr class="domain"><th colspan="5">${esc(dom)}<span class="dom-sum">${all.length} dashboard${all.length > 1 ? "s" : ""} · ${m.ready} of ${m.total} metrics ready</span></th></tr>`;
+      html += rows.map(({ d, mh }) => row(d, mh.hint)).join("");
+    });
+    $("#dash-body").innerHTML = html;
+    $("#empty-note").hidden = shown > 0;
+  }
+
+  // ── Timeline ────────────────────────────────────────────────────
+  function renderTimeline() {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const dashDated = DATA.dashboards.filter((d) => d.due);
+    const allDates = [...DATA.milestones.filter((m) => m.due).map((m) => parseDate(m.due)), ...dashDated.map((d) => parseDate(d.due))];
+    let start = new Date(Math.min(today, ...allDates)); start = new Date(start.getFullYear(), start.getMonth(), 1);
+    let end = new Date(Math.max(+today + 180 * 864e5, ...allDates)); end = new Date(end.getFullYear(), end.getMonth() + 1, 1);
+    const pct = (dt) => ((dt - start) / (end - start)) * 100;
+
+    let axis = "";
+    for (let d = new Date(start); d < end; d.setMonth(d.getMonth() + 1)) {
+      const lab = d.toLocaleDateString(undefined, d.getMonth() === 0 || +d === +start ? { month: "short", year: "numeric" } : { month: "short" });
+      axis += `<span style="left:${pct(d)}%">${lab}</span>`;
     }
+    const todayLine = `<div class="tl-today" style="left:${pct(today)}%" title="Today"></div>`;
+
+    const groups = {};
+    DATA.milestones.forEach((m) => { const p = m.code.slice(1).split(".")[0]; (groups[p] = groups[p] || []).push(m); });
+    let rows = Object.keys(groups).sort((a, b) => a - b).map((p) => {
+      const ms = groups[p];
+      const dated = ms.filter((m) => m.due), und = ms.filter((m) => !m.due);
+      const marks = dated.map((m) => `<button class="tl-mark ${m.done ? "done" : ""}" style="left:${pct(parseDate(m.due))}%" data-tip="ms" data-text="${esc(`${m.code} ${m.name}|Due ${fmtDate(m.due, true)}${m.done ? " · done" : ""}`)}" aria-label="${esc(`${m.code} ${m.name}, due ${fmtDate(m.due, true)}`)}"></button>`).join("");
+      const chips = und.length ? `<div class="tl-unsched">No date yet: ${und.map((m) => `<span class="chip ${m.done ? "done" : ""}" title="${esc(m.name)}">${esc(m.code)}</span>`).join("")}</div>` : "";
+      return `<div class="tl-row"><div class="tl-label">${esc(PHASES[p] || "Phase " + p)}<small>M${p} · ${ms.filter((m) => m.done).length} of ${ms.length} done</small></div>
+        <div><div class="tl-track">${todayLine}${marks}</div>${chips}</div></div>`;
+    });
+    const dmarks = dashDated.map((d) => `<button class="tl-mark dash" style="left:${pct(parseDate(d.due))}%" data-tip="ms" data-text="${esc(`${d.name}|Target ${fmtDate(d.due, true)}`)}" aria-label="${esc(`${d.name}, target ${fmtDate(d.due, true)}`)}"></button>`).join("");
+    const dashNote = `<div class="tl-unsched">${DATA.dashboards.length - dashDated.length} of ${DATA.dashboards.length} dashboards have no target date yet</div>`;
+    rows.push(`<div class="tl-row"><div class="tl-label">Dashboard targets<small>${dashDated.length} dated</small></div><div><div class="tl-track">${todayLine}${dmarks}</div>${dashNote}</div></div>`);
+    $("#timeline").innerHTML = `<div class="tl-axis">${axis}</div>` + rows.join("");
+
+    $("#ms-table").innerHTML = `<thead><tr><th>Milestone</th><th>Phase</th><th>Due</th><th>Status</th></tr></thead><tbody>` +
+      DATA.milestones.map((m) => `<tr><td><b>${esc(m.code)}</b> ${esc(m.name)}</td><td>${esc(PHASES[m.code.slice(1).split(".")[0]] || "")}</td><td>${m.due ? fmtDate(m.due, true) : '<span class="muted">Not set</span>'}</td><td>${m.done ? "Done" : "Open"}</td></tr>`).join("") + "</tbody>";
+  }
+
+  // ── Tooltip ─────────────────────────────────────────────────────
+  const tip = $("#tip");
+  function showTip(el, x, y) {
+    let html;
+    if (el.dataset.tip === "ms") {
+      const [a, b] = el.dataset.text.split("|");
+      html = `<b>${esc(a)}</b><br>${esc(b)}`;
+    } else {
+      const rows = el.dataset.rows.split(";").map((r) => r.split("|"));
+      html = `<b>${esc(el.dataset.tip[0].toUpperCase() + el.dataset.tip.slice(1))}</b>` +
+        rows.map(([k, v]) => `<div class="tr"><span>${esc(k)}</span><span>${esc(v)}</span></div>`).join("");
+    }
+    tip.innerHTML = html; tip.hidden = false;
+    const r = tip.getBoundingClientRect();
+    tip.style.left = Math.min(x + 12, window.innerWidth - r.width - 8) + "px";
+    tip.style.top = (y + 16 + r.height > window.innerHeight ? y - r.height - 10 : y + 16) + "px";
+  }
+  document.addEventListener("mousemove", (e) => {
+    const el = e.target.closest("[data-tip]");
+    if (el) showTip(el, e.clientX, e.clientY); else tip.hidden = true;
   });
+  document.addEventListener("focusin", (e) => {
+    const el = e.target.closest("[data-tip]");
+    if (el) { const r = el.getBoundingClientRect(); showTip(el, r.left, r.bottom); }
+  });
+  document.addEventListener("focusout", () => (tip.hidden = true));
+
+  // ── Expand / collapse ───────────────────────────────────────────
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".name-btn");
+    if (!btn) return;
+    const open = btn.getAttribute("aria-expanded") !== "true";
+    btn.setAttribute("aria-expanded", open);
+    document.getElementById(btn.getAttribute("aria-controls")).hidden = !open;
+  });
+
+  // ── Init ────────────────────────────────────────────────────────
+  $("#updated").textContent = "Updated " + new Date(DATA.updated).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  $("#legend").innerHTML = ["ready", "partial", "cube_work", "data_work", "unset"].map((k) => `<span><i class="sw-${k}"></i>${k === "unset" ? "Status not set" : STATUS[k]}</span>`).join("");
+  $("#def-steps").innerHTML = STEPS.map((s) => `<li>${esc(s)}</li>`).join("");
+  [...new Set(DATA.dashboards.map((d) => d.domain))].forEach((d) => $("#f-domain").insertAdjacentHTML("beforeend", `<option>${esc(d)}</option>`));
+  ["#q", "#f-domain", "#f-stage"].forEach((s) => $(s).addEventListener("input", renderTable));
+
+  renderKpis();
+  renderTable();
+  renderTimeline();
+  if (DATA.parking_lot.length) $("#pl-body").innerHTML = DATA.parking_lot.map((d) => row(d, "")).join("");
+  else $("#pl-section").hidden = true;
 })();
 </script>
 </body>
