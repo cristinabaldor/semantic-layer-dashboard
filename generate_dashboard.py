@@ -8,14 +8,18 @@ Tableau dashboard, plus milestones.
 
 What it reads
   Dashboard tasks   tag `dashboard`; section = domain ("1 · …").
-    measure rows    subtasks tagged `measure` + one status tag. Done = ships in Cube.
+    measure rows    subtasks tagged `measure`. Done = live in Cube; open rows
+                    carry at most one of STATUS_TAGS.
     checklist       subtasks named like CHECKLIST below (Anthony's transition steps).
-    dimensions      the "Dimensions" list in the task description,
-                    one line per dimension: `name · how it's used · status`.
+    dimensions      the tasks blocking the dashboard task: dimension rows, each a
+                    subtask of the table its column comes from, read like measure
+                    rows; how each is used is its notes' `Use:` line.
   Milestones        top-level tasks named `M0`, `M1.1` … `M5.5`.
+teamster's scripts/asana_sync.py sets the ticks and tags this script reads.
 
-Only names, counts, statuses and dates are written. Nothing else from the
-descriptions leaves this script; the output is published on a public page.
+Only names, counts, statuses, dates and each dimension's `Use:` line are
+written. Nothing else from the notes leaves this script; the output is
+published on a public page.
 
 USAGE
   export ASANA_PAT=…        (or put ASANA_PAT=… in .env)
@@ -37,28 +41,23 @@ PROJECT_GID = "1213735218595734"
 OUTPUT_FILE = "data.js"
 API = "https://app.asana.com/api/1.0"
 TASK_FIELDS = ("name,completed,tags.name,due_on,start_on,notes,"
-               "num_subtasks,resource_subtype")
+               "num_subtasks,resource_subtype,dependencies")
 
 CHECKLIST = ["Built in Cube", "Matches within tolerance", "Privacy review passed",
              "Pilot run", "Rebuilt in Tableau on Cube", "Launched"]
 PARKING_LOT_PREFIX = "Parking lot"
 
-# Measure status tag → page status key. A measure that is done is always "ready".
-MEASURE_TAGS = {
-    "cube-covered": "cube_work",   # catalog says covered but not ticked: not shipped yet
-    "cube-partial": "cube_work",   # partly in Cube: still needs Cube work
+# Status tag → page status key, for measure and dimension rows. A done row is always "ready".
+STATUS_TAGS = {
+    "needs-cube": "cube_work",
+    "needs-data": "data_work",
+    # rows still carry these until asana_sync.py's next --apply strips them
+    "cube-covered": "cube_work",
+    "cube-partial": "cube_work",
     "mart-ready":   "cube_work",
     "mart-missing": "data_work",
 }
-# Dimension status text (first match wins, so "partially cube-covered" precedes "cube-covered").
-DIMENSION_STATUSES = [
-    ("partially cube-covered", "cube_work"),
-    ("cube-partial",           "cube_work"),
-    ("cube-covered",           "ready"),
-    ("mart-ready",             "cube_work"),
-    ("mart-missing",           "data_work"),
-    ("workbook-only",          "tableau_only"),
-]
+USE_RE = re.compile(r"^\s*Use:\s*(.+)$", re.M)
 MILESTONE_RE = re.compile(r"^(M\d+(?:\.\d+)?)\s+(.*)$")
 
 
@@ -91,6 +90,22 @@ def _get(pat, path, **params):
         params["offset"] = body["next_page"]["offset"]
 
 
+def _get_one(pat, path, **params):
+    """GET a single Asana object."""
+    url = f"{API}{path}?{urllib.parse.urlencode(params)}"
+    req = urllib.request.Request(url, headers={"Authorization": f"Bearer {pat}"})
+    for attempt in range(5):
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                return json.load(r)["data"]
+        except urllib.error.HTTPError as e:
+            if e.code == 429 or e.code >= 500:
+                time.sleep(int(e.headers.get("Retry-After", 2 ** attempt)))
+                continue
+            raise
+    raise RuntimeError(f"Asana kept failing for {path}")
+
+
 def fetch_project(pat):
     """Top-level tasks with their section name and direct subtasks."""
     tasks = []
@@ -101,9 +116,18 @@ def fetch_project(pat):
             t["subtasks"] = (_get(pat, f"/tasks/{t['gid']}/subtasks", opt_fields=TASK_FIELDS)
                              if t.get("num_subtasks") else [])
             tasks.append(t)
+    # Dimension rows blocking a dashboard are table subtasks, mostly loaded above;
+    # fetch the rest (subtasks of nested table tasks) one by one.
+    loaded = {s["gid"] for t in tasks for s in t["subtasks"]}
+    extra = {}
+    for t in tasks:
+        if "dashboard" in _tags(t):
+            for d in t.get("dependencies", []):
+                if d["gid"] not in loaded and d["gid"] not in extra:
+                    extra[d["gid"]] = _get_one(pat, f"/tasks/{d['gid']}", opt_fields=TASK_FIELDS)
     print(f"  {len(sections)} sections, {len(tasks)} tasks, "
-          f"{sum(len(t['subtasks']) for t in tasks)} subtasks.")
-    return tasks
+          f"{sum(len(t['subtasks']) for t in tasks)} subtasks, {len(extra)} extra blockers.")
+    return tasks, extra
 
 
 # ── PARSING ───────────────────────────────────────────────────────────────────
@@ -117,58 +141,41 @@ def _domain(section_name):
     return re.sub(r"^\d+\s*·\s*", "", section_name).strip()
 
 
-def parse_dimensions(notes):
-    """Read the 'Dimensions' block of a dashboard description."""
-    lines = (notes or "").splitlines()
-    try:
-        start = next(i for i, l in enumerate(lines) if l.strip() == "Dimensions")
-    except StopIteration:
-        return None
-    dims = []
-    for line in lines[start + 1:]:
-        if line.strip() and not line[0].isspace():
-            break                     # next unindented heading ends the block
-        line = line.strip()
-        if not line:
-            continue
-        parts = [p.strip() for p in line.split(" · ")]
-        status_text = parts[-1] if len(parts) >= 3 else line
-        status = next((key for text, key in DIMENSION_STATUSES if text in status_text),
-                      "unknown")
-        dims.append({
-            "name":   parts[0][:120],
-            "use":    parts[1][:120] if len(parts) >= 3 else "",
-            "status": status,
-        })
-    return dims
-
-
-def measure_status(sub):
+def row_status(sub):
     if sub.get("completed"):
         return "ready"
     for tag in _tags(sub):
-        if tag in MEASURE_TAGS:
-            return MEASURE_TAGS[tag]
+        if tag in STATUS_TAGS:
+            return STATUS_TAGS[tag]
     return "unset"
 
 
-def build_dashboard(task, warnings):
+def build_dashboard(task, by_gid, warnings):
     measures, checklist = [], {}
+    dimensions = []
+    for dep in task.get("dependencies", []):
+        d = by_gid.get(dep["gid"])
+        if d is None:
+            warnings.append(f"'{task['name'].strip()}': blocker {dep['gid']} not found")
+            continue
+        use = USE_RE.search(d.get("notes") or "")
+        dimensions.append({"name":   d["name"].strip()[:120],
+                           "use":    use.group(1).strip()[:120] if use else "",
+                           "status": row_status(d)})
     for sub in task["subtasks"]:
         if sub["name"].strip() in CHECKLIST:
             checklist[sub["name"].strip()] = {"done": bool(sub.get("completed")),
                                               "due": sub.get("due_on") or ""}
         elif "measure" in _tags(sub):
             measures.append({"name": sub["name"].strip()[:200],
-                             "status": measure_status(sub),
+                             "status": row_status(sub),
                              "due": sub.get("due_on") or ""})
         else:
             warnings.append(f"'{task['name'].strip()}': untagged subtask "
                             f"'{sub['name'][:60]}' skipped")
 
-    dimensions = parse_dimensions(task.get("notes"))
-    if dimensions is None:
-        warnings.append(f"'{task['name'].strip()}': no Dimensions list in description")
+    if not dimensions:
+        warnings.append(f"'{task['name'].strip()}': no dimension rows block it")
 
     # Stage = furthest checklist step ticked (0 = no checklist or nothing ticked).
     stage = max((i + 1 for i, step in enumerate(CHECKLIST)
@@ -191,9 +198,10 @@ def build_dashboard(task, warnings):
     }
 
 
-def build_data(tasks):
+def build_data(tasks, extra):
     warnings = []
     dashboards, parking_lot, milestones = [], [], []
+    by_gid = {s["gid"]: s for t in tasks for s in t["subtasks"]} | extra
 
     for t in tasks:
         tags = _tags(t)
@@ -202,7 +210,7 @@ def build_data(tasks):
                 warnings.append(f"'{t['name'].strip()}' ({t['section']}): empty dashboard "
                                 "task, left off the page")
                 continue
-            d = build_dashboard(t, warnings)
+            d = build_dashboard(t, by_gid, warnings)
             (parking_lot if t["section"].startswith(PARKING_LOT_PREFIX)
              else dashboards).append(d)
         elif "measure" in tags:
@@ -243,7 +251,7 @@ def main():
         sys.exit("Error: ASANA_PAT is not set (export it or put it in .env).")
 
     print("Reading Asana…")
-    data, warnings = build_data(fetch_project(pat))
+    data, warnings = build_data(*fetch_project(pat))
     data["updated"] = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="minutes")
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
