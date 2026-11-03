@@ -10,10 +10,11 @@ What it reads
   Dashboard tasks   tag `dashboard`; section = domain ("1 · …").
     checklist       subtasks named like CHECKLIST below (Anthony's transition steps).
     measure rows    subtasks tagged `measure`, from two places:
-                      - directly under the dashboard task;
+                      - directly under the dashboard task; a `Used by:` line in
+                        its notes adds the other dashboards it serves;
                       - under a table task (`dim_*`, `fct_*`, `bridge_*`) whose
-                        notes' `Used by:` line links the dashboard task. One row
-                        serves every dashboard it links.
+                        notes' `Used by:` line links the dashboard task.
+                    One row serves every dashboard it links.
                     Done = live in Cube; open rows carry at most one of STATUS_TAGS.
     dimensions      dimension rows: other subtasks of table tasks whose notes'
                     `Used by:` line links the dashboard task, read like measure
@@ -47,8 +48,10 @@ API = "https://app.asana.com/api/1.0"
 TASK_FIELDS = ("name,completed,tags.name,due_on,start_on,notes,"
                "num_subtasks,resource_subtype")
 
-CHECKLIST = ["Built in Cube", "Matches within tolerance", "Access verified",
+CHECKLIST = ["Cube work complete", "Matches within tolerance", "Access verified",
              "Pilot run", "Launched"]
+# Earlier Asana names for a checklist step, read as the current name.
+OLD_STEP_NAMES = {"Built in Cube": "Cube work complete"}
 # "Fully available" (Cube can answer everything the dashboard shows) needs these
 # steps ticked; Pilot run and Launched are rollout after it.
 AVAILABLE_STEPS = CHECKLIST[:3]
@@ -121,17 +124,21 @@ def fetch_project(pat):
 
 
 def linked_rows(tasks):
-    """Dashboard gid → {"measures": [...], "dimensions": [...]}: table-task subtasks
-    whose `Used by:` links it. A row tagged `measure` is a measure row; any other is
-    a dimension row."""
+    """Dashboard gid → {"measures": [...], "dimensions": [...]}: rows whose `Used by:`
+    links it. Table-task subtasks are measure rows when tagged `measure`, else
+    dimension rows. A measure directly under a dashboard links the other dashboards
+    its `Used by:` names; its own dashboard already counts it."""
     tables = [t for t in tasks if TABLE_RE.match(t["name"].strip())]
     tables += [s for t in tasks for s in t["subtasks"] if TABLE_RE.match(s["name"].strip())]
+    sources = [(None, row) for table in tables for row in table.get("subtasks", [])]
+    sources += [(t["gid"], row) for t in tasks if "dashboard" in _tags(t)
+                for row in t["subtasks"] if "measure" in _tags(row)]
     out = {}
-    for table in tables:
-        for row in table.get("subtasks", []):
-            used_by = USED_BY_RE.search(row.get("notes") or "")
-            kind = "measures" if "measure" in _tags(row) else "dimensions"
-            for gid in set(re.findall(r"\b(\d{16})\b", used_by.group(1))) if used_by else ():
+    for parent_gid, row in sources:
+        used_by = USED_BY_RE.search(row.get("notes") or "")
+        kind = "measures" if "measure" in _tags(row) else "dimensions"
+        for gid in set(re.findall(r"\b(\d{16})\b", used_by.group(1))) if used_by else ():
+            if gid != parent_gid:
                 out.setdefault(gid, {"measures": [], "dimensions": []})[kind].append(row)
     return out
 
@@ -172,9 +179,10 @@ def build_dashboard(task, linked, warnings):
                            "use":    use.group(1).strip()[:120] if use else "",
                            "status": row_status(d)})
     for sub in task["subtasks"]:
-        if sub["name"].strip() in CHECKLIST:
-            checklist[sub["name"].strip()] = {"done": bool(sub.get("completed")),
-                                              "due": sub.get("due_on") or ""}
+        step = OLD_STEP_NAMES.get(sub["name"].strip(), sub["name"].strip())
+        if step in CHECKLIST:
+            checklist[step] = {"done": bool(sub.get("completed")),
+                               "due": sub.get("due_on") or ""}
         elif "measure" in _tags(sub):
             measures.append(_measure(sub))
         else:
