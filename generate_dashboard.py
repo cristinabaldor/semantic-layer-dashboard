@@ -49,7 +49,11 @@ TASK_FIELDS = ("name,completed,tags.name,due_on,start_on,notes,"
 
 CHECKLIST = ["Built in Cube", "Matches within tolerance", "Access verified",
              "Pilot run", "Launched"]
-PARKING_LOT_PREFIX = "Parking lot"
+# "Fully available" (Cube can answer everything the dashboard shows) needs these
+# steps ticked; Pilot run and Launched are rollout after it.
+AVAILABLE_STEPS = CHECKLIST[:3]
+# Dashboards in these sections are listed apart from this year's totals.
+OUTSIDE_PLAN_PREFIXES = ("2027-28", "2026-27 Stretch")
 
 # Status tag → page status key, for measure and dimension rows. A done row is always "ready".
 STATUS_TAGS = {
@@ -184,7 +188,9 @@ def build_dashboard(task, linked, warnings):
     stage = max((i + 1 for i, step in enumerate(CHECKLIST)
                  if checklist.get(step, {}).get("done")), default=0)
     launched = checklist.get("Launched", {}).get("done", False)
-    all_measures_ready = bool(measures) and all(m["status"] == "ready" for m in measures)
+    rows = measures + dimensions
+    available = (bool(rows) and all(r["status"] == "ready" for r in rows)
+                 and all(checklist.get(s, {}).get("done") for s in AVAILABLE_STEPS))
 
     return {
         "gid":           task["gid"],
@@ -197,7 +203,9 @@ def build_dashboard(task, linked, warnings):
         "checklist":     [checklist.get(s, {}).get("done", False) for s in CHECKLIST],
         "stage":         stage,
         "launched":      launched,
-        "transitioned":  launched and all_measures_ready,
+        "available":     available,
+        # Same value under the old name, for a page that predates "available".
+        "transitioned":  available,
     }
 
 
@@ -215,7 +223,7 @@ def build_data(tasks):
                                 "task, left off the page")
                 continue
             d = build_dashboard(t, linked.get(t["gid"], empty), warnings)
-            (parking_lot if t["section"].startswith(PARKING_LOT_PREFIX)
+            (parking_lot if t["section"].startswith(OUTSIDE_PLAN_PREFIXES)
              else dashboards).append(d)
         elif "measure" in tags:
             warnings.append(f"measure '{t['name'].strip()}' is not under a dashboard, "
@@ -235,7 +243,8 @@ def build_data(tasks):
         return [int(x) for x in ms["code"][1:].split(".")]
     milestones.sort(key=code_key)
     return {"dashboards": dashboards, "parking_lot": parking_lot,
-            "milestones": milestones, "checklist_steps": CHECKLIST}, warnings
+            "milestones": milestones, "checklist_steps": CHECKLIST,
+            "available_steps": len(AVAILABLE_STEPS)}, warnings
 
 
 # ── MAIN ──────────────────────────────────────────────────────────────────────
@@ -263,8 +272,8 @@ def main():
                 + ";\n")
 
     ds = data["dashboards"]
-    print(f"  Dashboards: {len(ds)} core ({sum(d['transitioned'] for d in ds)} transitioned), "
-          f"{len(data['parking_lot'])} parking lot")
+    print(f"  Dashboards: {len(ds)} core ({sum(d['available'] for d in ds)} fully available), "
+          f"{len(data['parking_lot'])} outside this year's plan")
     print(f"  Metrics ready: {sum(m['status'] == 'ready' for d in ds for m in d['measures'])}"
           f"/{sum(len(d['measures']) for d in ds)}")
     print(f"  Milestones: {len(data['milestones'])} "
