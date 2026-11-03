@@ -4,11 +4,14 @@ generate_dashboard.py
 Reads the "Data Marts + Semantic Layer" Asana project (read-only) and writes
 data.js for the semantic layer build status page on the teamster docs site
 (docs/launch/semantic-layer/, which loads this repo's Pages copy): one record per
-Tableau dashboard, plus milestones.
+Tableau dashboard, one per domain, plus milestones.
 
 What it reads
+  Domain steps      top-level tasks in a domain's section, matched by name with
+                    DOMAIN_STEPS below: "Cubes: <domain> facts", "<domain>
+                    verified", "Security review: <domain>", "Pilot run: <domain>",
+                    "<domain> launched". Progress is tracked per domain.
   Dashboard tasks   tag `dashboard`; section = domain ("1 · …").
-    checklist       subtasks named like CHECKLIST below (Anthony's transition steps).
     measure rows    subtasks tagged `measure`, from two places:
                       - directly under the dashboard task; a `Used by:` line in
                         its notes adds the other dashboards it serves;
@@ -19,7 +22,8 @@ What it reads
     dimensions      dimension rows: other subtasks of table tasks whose notes'
                     `Used by:` line links the dashboard task, read like measure
                     rows; how each is used is its notes' `Use:` line.
-  Milestones        top-level tasks named `M0`, `M1.1` … `M5.5`.
+  Milestones        top-level tasks named `M0`, `M1.1` … `M5.5`, plus each
+                    domain's verified and launched tasks (phase 1, no code).
 teamster's scripts/asana_sync.py sets the ticks and tags this script reads.
 
 Only names, counts, statuses, dates and each dimension's `Use:` line are
@@ -48,13 +52,16 @@ API = "https://app.asana.com/api/1.0"
 TASK_FIELDS = ("name,completed,tags.name,due_on,start_on,notes,"
                "num_subtasks,resource_subtype")
 
-CHECKLIST = ["Cube work complete", "Matches within tolerance", "Access verified",
-             "Pilot run", "Launched"]
-# Earlier Asana names for a checklist step, read as the current name.
-OLD_STEP_NAMES = {"Built in Cube": "Cube work complete"}
-# "Fully available" (Cube can answer everything the dashboard shows) needs these
-# steps ticked; Pilot run and Launched are rollout after it.
-AVAILABLE_STEPS = CHECKLIST[:3]
+# Each domain's steps, in order: page name → pattern for the task's name.
+DOMAIN_STEPS = [
+    ("Built in Cube",   re.compile(r"^Cubes: .+ facts\b")),
+    ("Verified",        re.compile(r" verified$")),
+    ("Security review", re.compile(r"^Security review: ")),
+    ("Pilot run",       re.compile(r"^Pilot run: ")),
+    ("Launched",        re.compile(r" launched$")),
+]
+# Domain steps that are milestones: listed on the timeline too.
+MILESTONE_STEPS = ("Verified", "Launched")
 # Dashboards in these sections are listed apart from this year's totals.
 OUTSIDE_PLAN_PREFIXES = ("2027-28", "2026-27 Stretch")
 
@@ -171,7 +178,6 @@ def _measure(sub):
 
 def build_dashboard(task, linked, warnings):
     measures = [_measure(m) for m in linked["measures"]]
-    checklist = {}
     dimensions = []
     for d in linked["dimensions"]:
         use = USE_RE.search(d.get("notes") or "")
@@ -179,11 +185,7 @@ def build_dashboard(task, linked, warnings):
                            "use":    use.group(1).strip()[:120] if use else "",
                            "status": row_status(d)})
     for sub in task["subtasks"]:
-        step = OLD_STEP_NAMES.get(sub["name"].strip(), sub["name"].strip())
-        if step in CHECKLIST:
-            checklist[step] = {"done": bool(sub.get("completed")),
-                               "due": sub.get("due_on") or ""}
-        elif "measure" in _tags(sub):
+        if "measure" in _tags(sub):
             measures.append(_measure(sub))
         else:
             warnings.append(f"'{task['name'].strip()}': untagged subtask "
@@ -192,29 +194,37 @@ def build_dashboard(task, linked, warnings):
     if not dimensions:
         warnings.append(f"'{task['name'].strip()}': no dimension row's `Used by:` names it")
 
-    # Stage = furthest checklist step ticked (0 = no checklist or nothing ticked).
-    stage = max((i + 1 for i, step in enumerate(CHECKLIST)
-                 if checklist.get(step, {}).get("done")), default=0)
-    launched = checklist.get("Launched", {}).get("done", False)
-    rows = measures + dimensions
-    available = (bool(rows) and all(r["status"] == "ready" for r in rows)
-                 and all(checklist.get(s, {}).get("done") for s in AVAILABLE_STEPS))
-
     return {
-        "gid":           task["gid"],
-        "name":          task["name"].strip(),
-        "domain":        _domain(task["section"]),
-        "due":           task.get("due_on") or checklist.get("Launched", {}).get("due", ""),
-        "measures":      measures,
-        "dimensions":    dimensions or [],
-        "has_checklist": bool(checklist),
-        "checklist":     [checklist.get(s, {}).get("done", False) for s in CHECKLIST],
-        "stage":         stage,
-        "launched":      launched,
-        "available":     available,
-        # Same value under the old name, for a page that predates "available".
-        "transitioned":  available,
+        "gid":        task["gid"],
+        "name":       task["name"].strip(),
+        "domain":     _domain(task["section"]),
+        "due":        task.get("due_on") or "",
+        "measures":   measures,
+        "dimensions": dimensions,
     }
+
+
+def build_domains(tasks, dashboards, warnings):
+    """One record per domain with a dashboard this year, in section order:
+    each DOMAIN_STEPS task's tick and due date. Stage = furthest step ticked."""
+    domains = []
+    for name in dict.fromkeys(d["domain"] for d in dashboards):
+        in_section = [t for t in tasks if _domain(t["section"]) == name]
+        steps = []
+        for step, pattern in DOMAIN_STEPS:
+            hits = [t for t in in_section if pattern.search(t["name"].strip())]
+            if len(hits) != 1:
+                warnings.append(f"domain '{name}': {len(hits)} '{step}' tasks, expected 1")
+            t = hits[0] if hits else {}
+            steps.append({"name": t.get("name", "").strip(),
+                          "done": bool(t.get("completed")),
+                          "due":  t.get("due_on") or ""})
+        domains.append({
+            "name":  name,
+            "steps": steps,
+            "stage": max((i + 1 for i, s in enumerate(steps) if s["done"]), default=0),
+        })
+    return domains
 
 
 def build_data(tasks):
@@ -240,6 +250,7 @@ def build_data(tasks):
         if m:
             milestones.append({
                 "code":       m.group(1),
+                "phase":      int(m.group(1)[1:].split(".")[0]),
                 "name":       m.group(2).strip(),
                 "workstream": _domain(t["section"]),
                 "done":       bool(t.get("completed")),
@@ -247,12 +258,21 @@ def build_data(tasks):
                 "start":      t.get("start_on") or "",
             })
 
-    def code_key(ms):
-        return [int(x) for x in ms["code"][1:].split(".")]
-    milestones.sort(key=code_key)
-    return {"dashboards": dashboards, "parking_lot": parking_lot,
-            "milestones": milestones, "checklist_steps": CHECKLIST,
-            "available_steps": len(AVAILABLE_STEPS)}, warnings
+    domains = build_domains(tasks, dashboards, warnings)
+    for dom in domains:
+        for (step, _), s in zip(DOMAIN_STEPS, dom["steps"]):
+            if step in MILESTONE_STEPS and s["name"]:
+                milestones.append({"code": "", "phase": 1, "name": s["name"],
+                                   "workstream": dom["name"], "done": s["done"],
+                                   "due": s["due"], "start": ""})
+
+    def ms_key(ms):
+        code = [int(x) for x in ms["code"][1:].split(".")] if ms["code"] else [99]
+        return (ms["phase"], code, ms["due"] or "9999", ms["name"])
+    milestones.sort(key=ms_key)
+    return {"dashboards": dashboards, "parking_lot": parking_lot, "domains": domains,
+            "milestones": milestones,
+            "domain_steps": [step for step, _ in DOMAIN_STEPS]}, warnings
 
 
 # ── MAIN ──────────────────────────────────────────────────────────────────────
@@ -280,7 +300,10 @@ def main():
                 + ";\n")
 
     ds = data["dashboards"]
-    print(f"  Dashboards: {len(ds)} core ({sum(d['available'] for d in ds)} fully available), "
+    doms = data["domains"]
+    print(f"  Domains: {len(doms)} ({sum(d['steps'][1]['done'] for d in doms)} verified, "
+          f"{sum(d['steps'][-1]['done'] for d in doms)} launched)")
+    print(f"  Dashboards: {len(ds)} core, "
           f"{len(data['parking_lot'])} outside this year's plan")
     print(f"  Metrics ready: {sum(m['status'] == 'ready' for d in ds for m in d['measures'])}"
           f"/{sum(len(d['measures']) for d in ds)}")
