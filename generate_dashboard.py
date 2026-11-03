@@ -8,13 +8,16 @@ Tableau dashboard, plus milestones.
 
 What it reads
   Dashboard tasks   tag `dashboard`; section = domain ("1 · …").
-    measure rows    subtasks tagged `measure`. Done = live in Cube; open rows
-                    carry at most one of STATUS_TAGS.
     checklist       subtasks named like CHECKLIST below (Anthony's transition steps).
-    dimensions      dimension rows: subtasks of table tasks (`dim_*`, `fct_*`,
-                    `bridge_*`) whose notes' `Used by:` line links the dashboard
-                    task, read like measure rows; how each is used is its notes'
-                    `Use:` line.
+    measure rows    subtasks tagged `measure`, from two places:
+                      - directly under the dashboard task;
+                      - under a table task (`dim_*`, `fct_*`, `bridge_*`) whose
+                        notes' `Used by:` line links the dashboard task. One row
+                        serves every dashboard it links.
+                    Done = live in Cube; open rows carry at most one of STATUS_TAGS.
+    dimensions      dimension rows: other subtasks of table tasks whose notes'
+                    `Used by:` line links the dashboard task, read like measure
+                    rows; how each is used is its notes' `Use:` line.
   Milestones        top-level tasks named `M0`, `M1.1` … `M5.5`.
 teamster's scripts/asana_sync.py sets the ticks and tags this script reads.
 
@@ -44,8 +47,8 @@ API = "https://app.asana.com/api/1.0"
 TASK_FIELDS = ("name,completed,tags.name,due_on,start_on,notes,"
                "num_subtasks,resource_subtype")
 
-CHECKLIST = ["Built in Cube", "Matches within tolerance", "Privacy review passed",
-             "Pilot run", "Rebuilt in Tableau on Cube", "Launched"]
+CHECKLIST = ["Built in Cube", "Matches within tolerance", "Access verified",
+             "Pilot run", "Launched"]
 PARKING_LOT_PREFIX = "Parking lot"
 
 # Status tag → page status key, for measure and dimension rows. A done row is always "ready".
@@ -102,7 +105,7 @@ def fetch_project(pat):
             t["section"] = sec["name"]
             t["subtasks"] = (_get(pat, f"/tasks/{t['gid']}/subtasks", opt_fields=TASK_FIELDS)
                              if t.get("num_subtasks") else [])
-            # a table task nested under another task holds dimension rows too
+            # a table task nested under another task holds measure and dimension rows too
             for sub in t["subtasks"]:
                 if TABLE_RE.match(sub["name"].strip()) and sub.get("num_subtasks"):
                     sub["subtasks"] = _get(pat, f"/tasks/{sub['gid']}/subtasks",
@@ -113,16 +116,19 @@ def fetch_project(pat):
     return tasks
 
 
-def dimension_rows(tasks):
-    """Dashboard gid → its dimension rows: table-task subtasks whose `Used by:` links it."""
+def linked_rows(tasks):
+    """Dashboard gid → {"measures": [...], "dimensions": [...]}: table-task subtasks
+    whose `Used by:` links it. A row tagged `measure` is a measure row; any other is
+    a dimension row."""
     tables = [t for t in tasks if TABLE_RE.match(t["name"].strip())]
     tables += [s for t in tasks for s in t["subtasks"] if TABLE_RE.match(s["name"].strip())]
     out = {}
     for table in tables:
         for row in table.get("subtasks", []):
             used_by = USED_BY_RE.search(row.get("notes") or "")
+            kind = "measures" if "measure" in _tags(row) else "dimensions"
             for gid in set(re.findall(r"\b(\d{16})\b", used_by.group(1))) if used_by else ():
-                out.setdefault(gid, []).append(row)
+                out.setdefault(gid, {"measures": [], "dimensions": []})[kind].append(row)
     return out
 
 
@@ -146,10 +152,17 @@ def row_status(sub):
     return "unset"
 
 
-def build_dashboard(task, dim_rows, warnings):
-    measures, checklist = [], {}
+def _measure(sub):
+    return {"name":   sub["name"].strip()[:200],
+            "status": row_status(sub),
+            "due":    sub.get("due_on") or ""}
+
+
+def build_dashboard(task, linked, warnings):
+    measures = [_measure(m) for m in linked["measures"]]
+    checklist = {}
     dimensions = []
-    for d in dim_rows:
+    for d in linked["dimensions"]:
         use = USE_RE.search(d.get("notes") or "")
         dimensions.append({"name":   d["name"].strip()[:120],
                            "use":    use.group(1).strip()[:120] if use else "",
@@ -159,9 +172,7 @@ def build_dashboard(task, dim_rows, warnings):
             checklist[sub["name"].strip()] = {"done": bool(sub.get("completed")),
                                               "due": sub.get("due_on") or ""}
         elif "measure" in _tags(sub):
-            measures.append({"name": sub["name"].strip()[:200],
-                             "status": row_status(sub),
-                             "due": sub.get("due_on") or ""})
+            measures.append(_measure(sub))
         else:
             warnings.append(f"'{task['name'].strip()}': untagged subtask "
                             f"'{sub['name'][:60]}' skipped")
@@ -193,7 +204,8 @@ def build_dashboard(task, dim_rows, warnings):
 def build_data(tasks):
     warnings = []
     dashboards, parking_lot, milestones = [], [], []
-    dims = dimension_rows(tasks)
+    linked = linked_rows(tasks)
+    empty = {"measures": [], "dimensions": []}
 
     for t in tasks:
         tags = _tags(t)
@@ -202,7 +214,7 @@ def build_data(tasks):
                 warnings.append(f"'{t['name'].strip()}' ({t['section']}): empty dashboard "
                                 "task, left off the page")
                 continue
-            d = build_dashboard(t, dims.get(t["gid"], []), warnings)
+            d = build_dashboard(t, linked.get(t["gid"], empty), warnings)
             (parking_lot if t["section"].startswith(PARKING_LOT_PREFIX)
              else dashboards).append(d)
         elif "measure" in tags:
