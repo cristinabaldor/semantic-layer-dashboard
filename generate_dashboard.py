@@ -4,18 +4,27 @@ generate_dashboard.py
 Reads the "Data Marts + Semantic Layer" Asana project (read-only) and writes
 data.js for the semantic layer build status page on the teamster docs site
 (docs/launch/semantic-layer/, which loads this repo's Pages copy): one record per
-Tableau dashboard, plus milestones.
+Tableau dashboard, one per domain, plus milestones.
 
 What it reads
-  Dashboard tasks   tag `dashboard`; section = domain ("1 · …").
-    measure rows    subtasks tagged `measure`. Done = live in Cube; open rows
-                    carry at most one of STATUS_TAGS.
-    checklist       subtasks named like CHECKLIST below (Anthony's transition steps).
-    dimensions      dimension rows: subtasks of table tasks (`dim_*`, `fct_*`,
-                    `bridge_*`) whose notes' `Used by:` line links the dashboard
-                    task, read like measure rows; how each is used is its notes'
-                    `Use:` line.
-  Milestones        top-level tasks named `M0`, `M1.1` … `M5.5`.
+  Domain steps      top-level tasks in a domain's section, matched by name with
+                    DOMAIN_STEPS below: "Cubes: <domain> facts", "<domain>
+                    verified", "Security review: <domain>", "Pilot run: <domain>",
+                    "<domain> launched". Progress is tracked per domain.
+  Dashboard tasks   tag `dashboard`; section = domain ("1 · …"). Untagged subtasks
+                    (PR plans, issue copies, decisions) are work items, not rows.
+    measure rows    subtasks tagged `measure`, from two places:
+                      - directly under the dashboard task; a `Used by:` line in
+                        its notes adds the other dashboards it serves;
+                      - under a table task (`dim_*`, `fct_*`, `bridge_*`) whose
+                        notes' `Used by:` line links the dashboard task.
+                    One row serves every dashboard it links.
+                    Done = live in Cube; open rows carry at most one of STATUS_TAGS.
+    dimensions      dimension rows: other subtasks of table tasks whose notes'
+                    `Used by:` line links the dashboard task, read like measure
+                    rows; how each is used is its notes' `Use:` line.
+  Milestones        top-level tasks named `M0`, `M1.1` … `M5.5`, plus each
+                    domain's verified and launched tasks (phase 1, no code).
 teamster's scripts/asana_sync.py sets the ticks and tags this script reads.
 
 Only names, counts, statuses, dates and each dimension's `Use:` line are
@@ -44,9 +53,21 @@ API = "https://app.asana.com/api/1.0"
 TASK_FIELDS = ("name,completed,tags.name,due_on,start_on,notes,"
                "num_subtasks,resource_subtype")
 
-CHECKLIST = ["Built in Cube", "Matches within tolerance", "Privacy review passed",
-             "Pilot run", "Rebuilt in Tableau on Cube", "Launched"]
-PARKING_LOT_PREFIX = "Parking lot"
+# Each domain's steps, in order: page name → pattern for the task's name.
+DOMAIN_STEPS = [
+    ("Built in Cube",   re.compile(r"^Cubes: .+ facts\b")),
+    ("Verified",        re.compile(r" verified$")),
+    ("Security review", re.compile(r"^Security review: ")),
+    ("Pilot run",       re.compile(r"^Pilot run: ")),
+    ("Launched",        re.compile(r" launched$")),
+]
+# Subtasks of a domain's "Pilot run" task, earliest first; the page shows the
+# furthest one ticked. Any other ticked subtask ranks after these.
+PILOT_STATUS_ORDER = ("Domain Owner Selected", "Pilot Group Identified")
+# Domain steps that are milestones: listed on the timeline too.
+MILESTONE_STEPS = ("Verified", "Launched")
+# Dashboards in these sections are listed apart from this year's totals.
+OUTSIDE_PLAN_PREFIXES = ("2027-28", "2026-27 Stretch")
 
 # Status tag → page status key, for measure and dimension rows. A done row is always "ready".
 STATUS_TAGS = {
@@ -61,6 +82,9 @@ STATUS_TAGS = {
 USE_RE = re.compile(r"^\s*Use:\s*(.+)$", re.M)
 USED_BY_RE = re.compile(r"^\s*Used by:\s*(.*)$", re.M)  # Asana task links; each carries its gid
 TABLE_RE = re.compile(r"^(dim|fct|bridge)_[a-z0-9_]+$")
+# A facts task that is also its table's task names the table in parentheses:
+# "Cubes: Zendesk facts (fct_support_tickets)".
+TABLE_IN_NAME_RE = re.compile(r"\((dim|fct|bridge)_[a-z0-9_]+\)$")
 MILESTONE_RE = re.compile(r"^(M\d+(?:\.\d+)?)\s+(.*)$")
 
 
@@ -102,9 +126,9 @@ def fetch_project(pat):
             t["section"] = sec["name"]
             t["subtasks"] = (_get(pat, f"/tasks/{t['gid']}/subtasks", opt_fields=TASK_FIELDS)
                              if t.get("num_subtasks") else [])
-            # a table task nested under another task holds dimension rows too
+            # a table task nested under another task holds measure and dimension rows too
             for sub in t["subtasks"]:
-                if TABLE_RE.match(sub["name"].strip()) and sub.get("num_subtasks"):
+                if _is_table(sub) and sub.get("num_subtasks"):
                     sub["subtasks"] = _get(pat, f"/tasks/{sub['gid']}/subtasks",
                                            opt_fields=TASK_FIELDS)
             tasks.append(t)
@@ -113,16 +137,28 @@ def fetch_project(pat):
     return tasks
 
 
-def dimension_rows(tasks):
-    """Dashboard gid → its dimension rows: table-task subtasks whose `Used by:` links it."""
-    tables = [t for t in tasks if TABLE_RE.match(t["name"].strip())]
-    tables += [s for t in tasks for s in t["subtasks"] if TABLE_RE.match(s["name"].strip())]
+def _is_table(task):
+    name = task["name"].strip()
+    return bool(TABLE_RE.match(name) or TABLE_IN_NAME_RE.search(name))
+
+
+def linked_rows(tasks):
+    """Dashboard gid → {"measures": [...], "dimensions": [...]}: rows whose `Used by:`
+    links it. Table-task subtasks are measure rows when tagged `measure`, else
+    dimension rows. A measure directly under a dashboard links the other dashboards
+    its `Used by:` names; its own dashboard already counts it."""
+    tables = [t for t in tasks if _is_table(t)]
+    tables += [s for t in tasks for s in t["subtasks"] if _is_table(s)]
+    sources = [(None, row) for table in tables for row in table.get("subtasks", [])]
+    sources += [(t["gid"], row) for t in tasks if "dashboard" in _tags(t)
+                for row in t["subtasks"] if "measure" in _tags(row)]
     out = {}
-    for table in tables:
-        for row in table.get("subtasks", []):
-            used_by = USED_BY_RE.search(row.get("notes") or "")
-            for gid in set(re.findall(r"\b(\d{16})\b", used_by.group(1))) if used_by else ():
-                out.setdefault(gid, []).append(row)
+    for parent_gid, row in sources:
+        used_by = USED_BY_RE.search(row.get("notes") or "")
+        kind = "measures" if "measure" in _tags(row) else "dimensions"
+        for gid in set(re.findall(r"\b(\d{16})\b", used_by.group(1))) if used_by else ():
+            if gid != parent_gid:
+                out.setdefault(gid, {"measures": [], "dimensions": []})[kind].append(row)
     return out
 
 
@@ -146,54 +182,76 @@ def row_status(sub):
     return "unset"
 
 
-def build_dashboard(task, dim_rows, warnings):
-    measures, checklist = [], {}
+def _measure(sub):
+    return {"name":   sub["name"].strip()[:200],
+            "status": row_status(sub),
+            "due":    sub.get("due_on") or ""}
+
+
+def build_dashboard(task, linked, warnings):
+    measures = [_measure(m) for m in linked["measures"]]
     dimensions = []
-    for d in dim_rows:
+    for d in linked["dimensions"]:
         use = USE_RE.search(d.get("notes") or "")
         dimensions.append({"name":   d["name"].strip()[:120],
                            "use":    use.group(1).strip()[:120] if use else "",
                            "status": row_status(d)})
+    # A dashboard also holds its work items (PR plans, issue copies, decisions);
+    # only its `measure`-tagged subtasks are rows.
     for sub in task["subtasks"]:
-        if sub["name"].strip() in CHECKLIST:
-            checklist[sub["name"].strip()] = {"done": bool(sub.get("completed")),
-                                              "due": sub.get("due_on") or ""}
-        elif "measure" in _tags(sub):
-            measures.append({"name": sub["name"].strip()[:200],
-                             "status": row_status(sub),
-                             "due": sub.get("due_on") or ""})
-        else:
-            warnings.append(f"'{task['name'].strip()}': untagged subtask "
-                            f"'{sub['name'][:60]}' skipped")
+        if "measure" in _tags(sub):
+            measures.append(_measure(sub))
 
     if not dimensions:
         warnings.append(f"'{task['name'].strip()}': no dimension row's `Used by:` names it")
 
-    # Stage = furthest checklist step ticked (0 = no checklist or nothing ticked).
-    stage = max((i + 1 for i, step in enumerate(CHECKLIST)
-                 if checklist.get(step, {}).get("done")), default=0)
-    launched = checklist.get("Launched", {}).get("done", False)
-    all_measures_ready = bool(measures) and all(m["status"] == "ready" for m in measures)
-
     return {
-        "gid":           task["gid"],
-        "name":          task["name"].strip(),
-        "domain":        _domain(task["section"]),
-        "due":           task.get("due_on") or checklist.get("Launched", {}).get("due", ""),
-        "measures":      measures,
-        "dimensions":    dimensions or [],
-        "has_checklist": bool(checklist),
-        "checklist":     [checklist.get(s, {}).get("done", False) for s in CHECKLIST],
-        "stage":         stage,
-        "launched":      launched,
-        "transitioned":  launched and all_measures_ready,
+        "gid":        task["gid"],
+        "name":       task["name"].strip(),
+        "domain":     _domain(task["section"]),
+        "due":        task.get("due_on") or "",
+        "measures":   measures,
+        "dimensions": dimensions,
     }
+
+
+def build_domains(tasks, dashboards, warnings):
+    """One record per domain with a dashboard this year, in section order:
+    each DOMAIN_STEPS task's tick and due date. Stage = furthest step ticked.
+    pilot_status = the name of the Pilot run task's furthest ticked subtask in
+    PILOT_STATUS_ORDER; "" when none is ticked."""
+    domains = []
+    for name in dict.fromkeys(d["domain"] for d in dashboards):
+        in_section = [t for t in tasks if _domain(t["section"]) == name]
+        steps, pilot = [], {}
+        for step, pattern in DOMAIN_STEPS:
+            hits = [t for t in in_section if pattern.search(t["name"].strip())]
+            if len(hits) != 1:
+                warnings.append(f"domain '{name}': {len(hits)} '{step}' tasks, expected 1")
+            t = hits[0] if hits else {}
+            if step == "Pilot run":
+                pilot = t
+            steps.append({"name": t.get("name", "").strip(),
+                          "done": bool(t.get("completed")),
+                          "due":  t.get("due_on") or ""})
+        rank = {n.lower(): i for i, n in enumerate(PILOT_STATUS_ORDER)}
+        ticked = sorted((s["name"].strip() for s in pilot.get("subtasks", [])
+                         if s.get("completed")),
+                        key=lambda n: rank.get(n.lower(), len(rank)))
+        domains.append({
+            "name":  name,
+            "steps": steps,
+            "stage": max((i + 1 for i, s in enumerate(steps) if s["done"]), default=0),
+            "pilot_status": ticked[-1] if ticked else "",
+        })
+    return domains
 
 
 def build_data(tasks):
     warnings = []
     dashboards, parking_lot, milestones = [], [], []
-    dims = dimension_rows(tasks)
+    linked = linked_rows(tasks)
+    empty = {"measures": [], "dimensions": []}
 
     for t in tasks:
         tags = _tags(t)
@@ -202,8 +260,8 @@ def build_data(tasks):
                 warnings.append(f"'{t['name'].strip()}' ({t['section']}): empty dashboard "
                                 "task, left off the page")
                 continue
-            d = build_dashboard(t, dims.get(t["gid"], []), warnings)
-            (parking_lot if t["section"].startswith(PARKING_LOT_PREFIX)
+            d = build_dashboard(t, linked.get(t["gid"], empty), warnings)
+            (parking_lot if t["section"].startswith(OUTSIDE_PLAN_PREFIXES)
              else dashboards).append(d)
         elif "measure" in tags:
             warnings.append(f"measure '{t['name'].strip()}' is not under a dashboard, "
@@ -212,6 +270,7 @@ def build_data(tasks):
         if m:
             milestones.append({
                 "code":       m.group(1),
+                "phase":      int(m.group(1)[1:].split(".")[0]),
                 "name":       m.group(2).strip(),
                 "workstream": _domain(t["section"]),
                 "done":       bool(t.get("completed")),
@@ -219,11 +278,21 @@ def build_data(tasks):
                 "start":      t.get("start_on") or "",
             })
 
-    def code_key(ms):
-        return [int(x) for x in ms["code"][1:].split(".")]
-    milestones.sort(key=code_key)
-    return {"dashboards": dashboards, "parking_lot": parking_lot,
-            "milestones": milestones, "checklist_steps": CHECKLIST}, warnings
+    domains = build_domains(tasks, dashboards, warnings)
+    for dom in domains:
+        for (step, _), s in zip(DOMAIN_STEPS, dom["steps"]):
+            if step in MILESTONE_STEPS and s["name"]:
+                milestones.append({"code": "", "phase": 1, "name": s["name"],
+                                   "workstream": dom["name"], "done": s["done"],
+                                   "due": s["due"], "start": ""})
+
+    def ms_key(ms):
+        code = [int(x) for x in ms["code"][1:].split(".")] if ms["code"] else [99]
+        return (ms["phase"], code, ms["due"] or "9999", ms["name"])
+    milestones.sort(key=ms_key)
+    return {"dashboards": dashboards, "parking_lot": parking_lot, "domains": domains,
+            "milestones": milestones,
+            "domain_steps": [step for step, _ in DOMAIN_STEPS]}, warnings
 
 
 # ── MAIN ──────────────────────────────────────────────────────────────────────
@@ -251,8 +320,11 @@ def main():
                 + ";\n")
 
     ds = data["dashboards"]
-    print(f"  Dashboards: {len(ds)} core ({sum(d['transitioned'] for d in ds)} transitioned), "
-          f"{len(data['parking_lot'])} parking lot")
+    doms = data["domains"]
+    print(f"  Domains: {len(doms)} ({sum(d['steps'][1]['done'] for d in doms)} verified, "
+          f"{sum(d['steps'][-1]['done'] for d in doms)} launched)")
+    print(f"  Dashboards: {len(ds)} core, "
+          f"{len(data['parking_lot'])} outside this year's plan")
     print(f"  Metrics ready: {sum(m['status'] == 'ready' for d in ds for m in d['measures'])}"
           f"/{sum(len(d['measures']) for d in ds)}")
     print(f"  Milestones: {len(data['milestones'])} "
