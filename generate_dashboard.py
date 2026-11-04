@@ -61,6 +61,9 @@ DOMAIN_STEPS = [
     ("Pilot run",       re.compile(r"^Pilot run: ")),
     ("Launched",        re.compile(r" launched$")),
 ]
+# Subtasks of a domain's "Pilot run" task, earliest first; the page shows the
+# furthest one ticked. Any other ticked subtask ranks after these.
+PILOT_STATUS_ORDER = ("Domain Owner Selected", "Pilot Group Identified")
 # Domain steps that are milestones: listed on the timeline too.
 MILESTONE_STEPS = ("Verified", "Launched")
 # Dashboards in these sections are listed apart from this year's totals.
@@ -214,23 +217,32 @@ def build_dashboard(task, linked, warnings):
 
 def build_domains(tasks, dashboards, warnings):
     """One record per domain with a dashboard this year, in section order:
-    each DOMAIN_STEPS task's tick and due date. Stage = furthest step ticked."""
+    each DOMAIN_STEPS task's tick and due date. Stage = furthest step ticked.
+    pilot_status = the name of the Pilot run task's furthest ticked subtask in
+    PILOT_STATUS_ORDER; "" when none is ticked."""
     domains = []
     for name in dict.fromkeys(d["domain"] for d in dashboards):
         in_section = [t for t in tasks if _domain(t["section"]) == name]
-        steps = []
+        steps, pilot = [], {}
         for step, pattern in DOMAIN_STEPS:
             hits = [t for t in in_section if pattern.search(t["name"].strip())]
             if len(hits) != 1:
                 warnings.append(f"domain '{name}': {len(hits)} '{step}' tasks, expected 1")
             t = hits[0] if hits else {}
+            if step == "Pilot run":
+                pilot = t
             steps.append({"name": t.get("name", "").strip(),
                           "done": bool(t.get("completed")),
                           "due":  t.get("due_on") or ""})
+        rank = {n.lower(): i for i, n in enumerate(PILOT_STATUS_ORDER)}
+        ticked = sorted((s["name"].strip() for s in pilot.get("subtasks", [])
+                         if s.get("completed")),
+                        key=lambda n: rank.get(n.lower(), len(rank)))
         domains.append({
             "name":  name,
             "steps": steps,
             "stage": max((i + 1 for i, s in enumerate(steps) if s["done"]), default=0),
+            "pilot_status": ticked[-1] if ticked else "",
         })
     return domains
 
