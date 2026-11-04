@@ -11,7 +11,8 @@ What it reads
                     DOMAIN_STEPS below: "Cubes: <domain> facts", "<domain>
                     verified", "Security review: <domain>", "Pilot run: <domain>",
                     "<domain> launched". Progress is tracked per domain.
-  Dashboard tasks   tag `dashboard`; section = domain ("1 · …").
+  Dashboard tasks   tag `dashboard`; section = domain ("1 · …"). Untagged subtasks
+                    (PR plans, issue copies, decisions) are work items, not rows.
     measure rows    subtasks tagged `measure`, from two places:
                       - directly under the dashboard task; a `Used by:` line in
                         its notes adds the other dashboards it serves;
@@ -78,6 +79,9 @@ STATUS_TAGS = {
 USE_RE = re.compile(r"^\s*Use:\s*(.+)$", re.M)
 USED_BY_RE = re.compile(r"^\s*Used by:\s*(.*)$", re.M)  # Asana task links; each carries its gid
 TABLE_RE = re.compile(r"^(dim|fct|bridge)_[a-z0-9_]+$")
+# A facts task that is also its table's task names the table in parentheses:
+# "Cubes: Zendesk facts (fct_support_tickets)".
+TABLE_IN_NAME_RE = re.compile(r"\((dim|fct|bridge)_[a-z0-9_]+\)$")
 MILESTONE_RE = re.compile(r"^(M\d+(?:\.\d+)?)\s+(.*)$")
 
 
@@ -121,7 +125,7 @@ def fetch_project(pat):
                              if t.get("num_subtasks") else [])
             # a table task nested under another task holds measure and dimension rows too
             for sub in t["subtasks"]:
-                if TABLE_RE.match(sub["name"].strip()) and sub.get("num_subtasks"):
+                if _is_table(sub) and sub.get("num_subtasks"):
                     sub["subtasks"] = _get(pat, f"/tasks/{sub['gid']}/subtasks",
                                            opt_fields=TASK_FIELDS)
             tasks.append(t)
@@ -130,13 +134,18 @@ def fetch_project(pat):
     return tasks
 
 
+def _is_table(task):
+    name = task["name"].strip()
+    return bool(TABLE_RE.match(name) or TABLE_IN_NAME_RE.search(name))
+
+
 def linked_rows(tasks):
     """Dashboard gid → {"measures": [...], "dimensions": [...]}: rows whose `Used by:`
     links it. Table-task subtasks are measure rows when tagged `measure`, else
     dimension rows. A measure directly under a dashboard links the other dashboards
     its `Used by:` names; its own dashboard already counts it."""
-    tables = [t for t in tasks if TABLE_RE.match(t["name"].strip())]
-    tables += [s for t in tasks for s in t["subtasks"] if TABLE_RE.match(s["name"].strip())]
+    tables = [t for t in tasks if _is_table(t)]
+    tables += [s for t in tasks for s in t["subtasks"] if _is_table(s)]
     sources = [(None, row) for table in tables for row in table.get("subtasks", [])]
     sources += [(t["gid"], row) for t in tasks if "dashboard" in _tags(t)
                 for row in t["subtasks"] if "measure" in _tags(row)]
@@ -184,12 +193,11 @@ def build_dashboard(task, linked, warnings):
         dimensions.append({"name":   d["name"].strip()[:120],
                            "use":    use.group(1).strip()[:120] if use else "",
                            "status": row_status(d)})
+    # A dashboard also holds its work items (PR plans, issue copies, decisions);
+    # only its `measure`-tagged subtasks are rows.
     for sub in task["subtasks"]:
         if "measure" in _tags(sub):
             measures.append(_measure(sub))
-        else:
-            warnings.append(f"'{task['name'].strip()}': untagged subtask "
-                            f"'{sub['name'][:60]}' skipped")
 
     if not dimensions:
         warnings.append(f"'{task['name'].strip()}': no dimension row's `Used by:` names it")
