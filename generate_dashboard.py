@@ -18,11 +18,15 @@ What it reads
                         its notes adds the other dashboards it serves;
                       - under a table task (`dim_*`, `fct_*`, `bridge_*`) whose
                         notes' `Used by:` line links the dashboard task.
+                      - under a PR task or holder (`Already in Cube`, `Deferred`) that sits
+                        under the dashboard task; it counts for that dashboard and for
+                        each dashboard its `Used by:` links, once each.
                     One row serves every dashboard it links.
                     Done = live in Cube; open rows carry at most one of STATUS_TAGS.
     dimensions      dimension rows: other subtasks of table tasks whose notes'
                     `Used by:` line links the dashboard task, read like measure
-                    rows; how each is used is its notes' `Use:` line.
+                    rows, and subtasks tagged `dimension` under a dashboard's PR
+                    tasks and holders; how each is used is its notes' `Use:` line.
   Milestones        top-level tasks named `M0`, `M1.1` … `M5.5`, plus each
                     domain's verified and launched tasks (phase 1, no code).
 teamster's scripts/asana_sync.py sets the ticks and tags this script reads.
@@ -126,9 +130,11 @@ def fetch_project(pat):
             t["section"] = sec["name"]
             t["subtasks"] = (_get(pat, f"/tasks/{t['gid']}/subtasks", opt_fields=TASK_FIELDS)
                              if t.get("num_subtasks") else [])
-            # a table task nested under another task holds measure and dimension rows too
+            # a table task nested under another task holds measure and dimension rows too,
+            # and so does every PR task or holder under a dashboard task
+            is_dashboard = "dashboard" in _tags(t)
             for sub in t["subtasks"]:
-                if _is_table(sub) and sub.get("num_subtasks"):
+                if (_is_table(sub) or is_dashboard) and sub.get("num_subtasks"):
                     sub["subtasks"] = _get(pat, f"/tasks/{sub['gid']}/subtasks",
                                            opt_fields=TASK_FIELDS)
             tasks.append(t)
@@ -159,6 +165,27 @@ def linked_rows(tasks):
         for gid in set(re.findall(r"\b(\d{16})\b", used_by.group(1))) if used_by else ():
             if gid != parent_gid:
                 out.setdefault(gid, {"measures": [], "dimensions": []})[kind].append(row)
+    # rows under a dashboard's PR tasks and holders: they count for that dashboard and for
+    # every dashboard their `Used by:` links, once each; only a `measure` or `dimension` tag
+    # makes a task a row there
+    for t in tasks:
+        if "dashboard" not in _tags(t):
+            continue
+        for sub in t["subtasks"]:
+            if _is_table(sub):
+                continue
+            for row in sub.get("subtasks", []):
+                tags = _tags(row)
+                kind = ("measures" if "measure" in tags
+                        else "dimensions" if "dimension" in tags else None)
+                if not kind:
+                    continue
+                used_by = USED_BY_RE.search(row.get("notes") or "")
+                targets = {t["gid"]}
+                if used_by:
+                    targets |= set(re.findall(r"\b(\d{16})\b", used_by.group(1)))
+                for gid in targets:
+                    out.setdefault(gid, {"measures": [], "dimensions": []})[kind].append(row)
     return out
 
 
